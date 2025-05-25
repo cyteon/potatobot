@@ -52,4 +52,4 @@ const execute = async function (interaction) {
   });
 };
 
-export default { data, execute };
+export default { data, execute }; 

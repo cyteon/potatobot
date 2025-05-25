@@ -117,14 +117,7 @@ const execute = async function (interaction) {
             ${sentMessageToUser ? ":white_check_mark: User has been notified" : ":x: User has not been notified"}
           `,
           fields: [
-            {
-              name: "Reason",
-              value: reason,
-            },
-            {
-              name: "Moderator",
-              value: `<@${interaction.user.id}>`,
-            },
+            {}
           ],
           color: 0xff6961,
         };
@@ -137,4 +130,4 @@ const execute = async function (interaction) {
   }
 };
 
-export default { data, execute };
+export default { data, execute }; 

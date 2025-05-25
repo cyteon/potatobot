@@ -27,15 +27,14 @@ const execute = async function (interaction) {
           fields: [
             {
               name: "Expression",
-              value: `\`\`\`js\n${expression}\`\`\``,
+              value: "```js\n" + expression + "\n```",
             },
             {
               name: "Result",
-              value: `\`\`\`js\n${result}\`\`\``,
+              value: "```js\n" + result + "\n```",
             },
           ],
-        },
-      ],
+        },\n      ],
     });
   } catch (error) {
     return interaction.reply({
@@ -45,4 +44,4 @@ const execute = async function (interaction) {
   }
 };
 
-export default { data, execute };
+export default { data, execute }; 

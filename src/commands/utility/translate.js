@@ -38,11 +38,11 @@ const execute = async function (interaction) {
                 fields: [
                     {
                         name: "Input",
-                        value: `\`\`\`\n${text}\n\`\`\``
+                        value: "```\n" + text + "\n```"
                     },
                     {
                         name: "Output",
-                        value: `\`\`\`\n${json[0][0][0]}\n\`\`\``
+                        value: "```\n" + json[0][0][0] + "\n```"
                     }
                 ],
                 color: 0x56b3fa
@@ -51,4 +51,4 @@ const execute = async function (interaction) {
     });
 }
 
-export default { data, execute };
+export default { data, execute }; 
