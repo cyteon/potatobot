@@ -17,7 +17,7 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload) -> None:
-        message_data = await CachedDB.find_one(db["reactionroles"], {"message_id": payload.message_id})
+        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": payload.message_id})
         if not message_data:
             return
 
@@ -52,7 +52,7 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload) -> None:
-        message_data = await CachedDB.find_one(db["reactionroles"], {"message_id": payload.message_id})
+        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": payload.message_id})
         if not message_data:
             return
 
@@ -155,10 +155,10 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
             await context.send("Failed to add reaction. Make sure the bot has permission to add reactions.")
             return
 
-        message_data = await CachedDB.find_one(db["reactionroles"], {"message_id": message_id})
+        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": message_id})
 
         if not message_data:
-            db["reactionroles"].insert_one({
+            db["reaction_roles"].insert_one({
                 "message_id": message_id,
                 "roles": {emoji_id: str(role.id)}
             })
@@ -168,7 +168,7 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
                 await context.send("Reaction role already exists.")
             else:
                 message_data["roles"][emoji_id] = str(role.id)
-                await CachedDB.update_one(db["reactionroles"], {"message_id": message_id}, {"$set": {"roles": message_data["roles"]}})
+                await CachedDB.update_one(db["reaction_roles"], {"message_id": message_id}, {"$set": {"roles": message_data["roles"]}})
                 await context.send("Reaction role added.")
 
 async def setup(bot) -> None:
