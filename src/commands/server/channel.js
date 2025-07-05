@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import Guild from "../../lib/models/Guild.js";
+import Guild from "../../models/Guild.js";
 
 const data = new SlashCommandBuilder()
   .setName("channel")

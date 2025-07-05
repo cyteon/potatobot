@@ -4,7 +4,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from "discord.js";
-import EconomyUser from "../../../lib/models/EconomyUser.js";
+import EconomyUser from "../../../models/EconomyUser.js";
 
 const data = new SlashCommandSubcommandBuilder()
   .setName("pay")

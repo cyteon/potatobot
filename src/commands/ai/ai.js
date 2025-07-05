@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 import OpenAI from "openai";
-import AiConvo from "../../lib/models/AiConvo.js";
+import AiConvo from "../../models/AiConvo.js";
 import { RateLimiter } from "discord.js-rate-limiter";
 
 let rateLimiter = new RateLimiter(1, 2000);

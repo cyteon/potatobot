@@ -3,8 +3,8 @@ import {
   ChannelType,
   PermissionFlagsBits,
 } from "discord.js";
-import GlobalUser from "../lib/models/GlobalUser.js";
-import Guild from "../lib/models/Guild.js";
+import GlobalUser from "../models/GlobalUser.js";
+import Guild from "../models/Guild.js";
 
 const ai_commands = ["imagine"];
 

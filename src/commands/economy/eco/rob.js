@@ -1,7 +1,7 @@
 import { SlashCommandSubcommandBuilder } from "discord.js";
 import { RateLimiter } from "discord.js-rate-limiter";
 import random from "random";
-import EconomyUser from "../../../lib/models/EconomyUser.js";
+import EconomyUser from "../../../models/EconomyUser.js";
 
 const rateLimiter = new RateLimiter(1, 60 * 60 * 1000);
 

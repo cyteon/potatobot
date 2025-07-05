@@ -1,8 +1,8 @@
 import { SlashCommandBuilder } from "discord.js";
-import GlobalUser from "../../lib/models/GlobalUser.js";
-import Guild from "../../lib/models/Guild.js";
-import AiChannels from "../../lib/models/AiChannels.js";
-import EconomyUser from "../../lib/models/EconomyUser.js";
+import GlobalUser from "../../models/GlobalUser.js";
+import Guild from "../../models/Guild.js";
+import AiChannels from "../../models/AiChannels.js";
+import EconomyUser from "../../models/EconomyUser.js";
 import balance from "../economy/eco/balance.js";
 
 const data = new SlashCommandBuilder()

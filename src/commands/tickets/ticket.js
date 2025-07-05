@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import Guild from "../../lib/models/Guild.js";
+import Guild from "../../models/Guild.js";
 import { PermissionFlagsBits } from "discord.js";
 
 const data = new SlashCommandBuilder()
