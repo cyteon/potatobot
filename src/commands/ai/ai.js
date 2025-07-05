@@ -5,21 +5,10 @@ import { RateLimiter } from "discord.js-rate-limiter";
 
 let rateLimiter = new RateLimiter(1, 2000);
 
-let lastApiKey = 0;
-function getClient() {
-  const apiKeyCount = process.env.GROQ_API_KEY_COUNT;
-
-  lastApiKey = lastApiKey + 1;
-
-  if (lastApiKey > apiKeyCount) {
-    lastApiKey = 1;
-  }
-
-  return new OpenAI({
-    apiKey: process.env[`GROQ_API_KEY_${lastApiKey}`],
+const client = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
     baseURL: "https://api.groq.com/openai/v1",
   });
-}
 
 const replaceList = [
   {
@@ -81,8 +70,6 @@ const execute = async function (interaction) {
     isChannel: false,
     id: interaction.user.id,
   });
-
-  const client = getClient();
 
   if (!convo) {
     convo = new AiConvo({

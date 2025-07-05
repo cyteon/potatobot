@@ -69,11 +69,6 @@ const execute = async function (interaction) {
   const { options } = interaction;
   const subCommand = options.getSubcommand();
 
-  const garyHeaders = {
-    "Content-Type": "application/json",
-    api_key: process.env.GARY_API_KEY,
-  };
-
   if (subCommand === "bird") {
     const response = await fetch("https://some-random-api.com/animal/bird");
     const json = await response.json();
@@ -113,28 +108,19 @@ const execute = async function (interaction) {
 
     await interaction.reply({ content: imgurl, ephemeral: false });
   } else if (subCommand === "gary") {
-    const response = await fetch("https://garybot.dev/api/gary", {
-      method: "GET",
-      headers: garyHeaders,
-    });
+    const response = await fetch("https://garybot.dev/api/gary");
     const json = await response.json();
     const imgurl = json.url;
 
     await interaction.reply({ content: imgurl, ephemeral: false });
   } else if (subCommand === "gary-joke") {
-    const response = await fetch("https://garybot.dev/api/joke", {
-      method: "GET",
-      headers: garyHeaders,
-    });
+    const response = await fetch("https://garybot.dev/api/joke");
     const json = await response.json();
     const joke = json.joke;
 
     await interaction.reply({ content: joke, ephemeral: false });
   } else if (subCommand === "gary-quote") {
-    const response = await fetch("https://garybot.dev/api/quote", {
-      method: "GET",
-      headers: garyHeaders,
-    });
+    const response = await fetch("https://garybot.dev/api/quote");
     const json = await response.json();
     const quote = json.quote;
 
