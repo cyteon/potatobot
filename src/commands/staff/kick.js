@@ -5,6 +5,7 @@ import Guild from "../../models/Guild.js";
 const data = new SlashCommandBuilder()
   .setName("kick")
   .setDescription("Kick a user")
+  .setIntegrationTypes(0)
   .addUserOption((option) =>
     option.setName("user").setDescription("The user to kick").setRequired(true),
   )

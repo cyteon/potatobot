@@ -3,6 +3,7 @@ import { SlashCommandBuilder, AttachmentBuilder } from "discord.js";
 const data = new SlashCommandBuilder()
   .setName("archive")
   .setDescription("Archive a set amount of messages")
+  .setIntegrationTypes(0)
   .addNumberOption((option) =>
     option
       .setName("amount")

@@ -5,6 +5,7 @@ import { PermissionFlagsBits } from "discord.js";
 const data = new SlashCommandBuilder()
   .setName("ticket")
   .setDescription("Ticket commands")
+  .setIntegrationTypes(0)
   .addSubcommand((subcommand) =>
     subcommand
       .setName("channel")

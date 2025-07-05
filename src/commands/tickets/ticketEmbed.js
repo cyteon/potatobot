@@ -4,6 +4,7 @@ import { PermissionFlagsBits } from "discord.js";
 const data = new SlashCommandBuilder()
   .setName("ticketembed")
   .setDescription("Send an embed containg a button to open a ticket")
+  .setIntegrationTypes(0)
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels);
 
 const execute = async function (interaction) {

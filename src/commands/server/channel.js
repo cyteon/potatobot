@@ -3,6 +3,7 @@ import Guild from "../../models/Guild.js";
 
 const data = new SlashCommandBuilder()
   .setName("channel")
+  .setIntegrationTypes(0)
   .setDescription("Commands to set channels for the bot")
   .addSubcommand((subcommand) =>
     subcommand
