@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import Guild from "../../models/Guild.js";
-import { PermissionFlagsBits } from "discord.js";
+import { ChannelType, PermissionFlagsBits } from "discord.js";
 
 const data = new SlashCommandBuilder()
   .setName("ticket")
@@ -58,6 +58,15 @@ const execute = async function (interaction) {
 
   if (subCommand === "channel") {
     const channel = interaction.options.getChannel("channel");
+
+    if (channel.type === ChannelType.GuildForum) {
+      return interaction.reply({
+        content: "You cannot set a forum channel as the ticket channel\nAs they can't have private threads",
+        ephemeral: true,
+      });
+    }
+
+    console.log(channel.type);
 
     if (!interaction.member.permissions.has("MANAGE_CHANNELS")) {
       return interaction.reply({

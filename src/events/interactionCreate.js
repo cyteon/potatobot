@@ -95,6 +95,7 @@ export default {
         if (!ticketLogChannel) {
           return await interaction.reply({
             content: "This server does not have tickets set up correctly!",
+            ephemeral: true,
           });
         }
 
