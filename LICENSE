@@ -616,15 +616,6 @@ an absolute waiver of all civil liability in connection with the
 Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
-In addition to the terms of the GNU Affero General Public License, the
-following restriction applies:
-
-1. The "source" command or functionality must always be included in
-   the source code. This command or functionality must not be removed,
-   altered, or disabled in any way. The "source" command is defined
-   as the function or method that provides access to the original
-   source code or other relevant project information.
-
                      END OF TERMS AND CONDITIONS
 
             How to Apply These Terms to Your New Programs
@@ -642,8 +633,8 @@ the "copyright" line and a pointer to where the full notice is found.
     Copyright (C) <year>  <name of author>
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
