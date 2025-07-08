@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import { WebhookClient } from "discord.js";
 
 const errorWebhook = new WebhookClient({
