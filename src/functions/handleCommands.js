@@ -1,11 +1,10 @@
 import { REST } from "@discordjs/rest";
+import chalk from "chalk";
 import { Routes } from "discord-api-types/v9";
 import {
   SlashCommandBuilder,
-  SlashCommandSubcommandBuilder,
-  SlashCommandSubcommandGroupBuilder,
+  SlashCommandSubcommandGroupBuilder
 } from "discord.js";
-import chalk from "chalk";
 import fs from "fs";
 
 const clientId = process.env.APPLICATION_ID;
