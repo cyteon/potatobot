@@ -68,6 +68,8 @@ export default (client) => {
           if (meta.userInstalled) {
             cmd.setIntegrationTypes(0, 1);
             cmd.setContexts(0, 1, 2);
+          } else {
+            cmd.setIntegrationTypes(0);
           }
 
           for (const file of subCommandFiles) {
