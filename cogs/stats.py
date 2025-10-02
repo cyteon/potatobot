@@ -9,11 +9,11 @@ from datetime import datetime
 from easy_pil import Font
 
 from PIL import Image, ImageDraw
-import pickledb
+from pickledb import PickleDB
 
 from utils import Checks
 
-db = pickledb.load('pickle/charts.db', False)
+db = PickleDB('pickle/charts.db', False)
 
 def textangle(draw, text, xy, angle, fill, font):
     img = Image.new('RGBA', font.getsize(text))

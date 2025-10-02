@@ -11,7 +11,7 @@ import sys
 import time
 import aiohttp
 
-import pickledb
+from pickledb import PickleDB
 import pymongo
 
 import discord
@@ -37,8 +37,8 @@ client = pymongo.MongoClient(os.getenv("MONGODB_URL"))
 db = client.potatobot
 
 os.makedirs("pickle", exist_ok=True)
-prefixDB = pickledb.load("pickle/prefix.db", False)
-statsDB = pickledb.load("pickle/stats.db", False)
+prefixDB = PickleDB("pickle/prefix.db", False)
+statsDB = PickleDB("pickle/stats.db", False)
 
 cant_react_in = []
 
