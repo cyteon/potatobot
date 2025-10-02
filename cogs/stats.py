@@ -39,7 +39,7 @@ class Stats(commands.Cog, name="📈 Stats"):
         guild_id = str(message.guild.id)
         current_date = datetime.utcnow().date()
 
-        if not db.exists(guild_id):
+        if not db.get(guild_id):
             db.set(guild_id, {})
 
         if str(current_date) not in db.get(guild_id):
@@ -94,7 +94,7 @@ class Stats(commands.Cog, name="📈 Stats"):
     @commands.check(Checks.command_not_disabled)
     async def messages(self, context: Context) -> None:
         guild_id = str(context.guild.id)
-        if not db.exists(guild_id):
+        if not db.get(guild_id):
             await context.send("No data available for this server.")
             return
 
@@ -152,7 +152,7 @@ class Stats(commands.Cog, name="📈 Stats"):
     @commands.check(Checks.command_not_disabled)
     async def members(self, context: Context) -> None:
         guild_id = str(context.guild.id)
-        if not db.exists(guild_id):
+        if not db.get(guild_id):
             await context.send("No data available for this server.")
             return
 

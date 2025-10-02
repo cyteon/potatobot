@@ -101,7 +101,7 @@ class DiscordBot(commands.AutoShardedBot):
     async def get_prefix(self, message):
         if message.guild:
             guild_id = str(message.guild.id)
-            if prefixDB.exists(guild_id):
+            if prefixDB.get(guild_id):
                 return prefixDB.get(guild_id)
             else:
                 return config["prefix"]
@@ -245,7 +245,7 @@ class DiscordBot(commands.AutoShardedBot):
                 f"Executed {executed_command} command by {context.author} (ID: {context.author.id}) in DMs"
             )
 
-        commands_ran = (statsDB.get("commands_ran") if statsDB.exists("commands_ran") else 0) + 1
+        commands_ran = (statsDB.get("commands_ran") if statsDB.get("commands_ran") else 0) + 1
         statsDB.set("commands_ran", commands_ran)
         statsDB.dump()
 

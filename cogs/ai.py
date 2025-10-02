@@ -517,7 +517,7 @@ class Ai(commands.Cog, name="🤖 AI"):
                 else:
                     await message.reply(data)
 
-                ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.exists("ai_requests") else 0) + 1
+                ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
                 self.statsDB.set("ai_requests", ai_requests)
                 self.statsDB.dump()
 
@@ -629,7 +629,7 @@ class Ai(commands.Cog, name="🤖 AI"):
             else:
                 await context.reply(data)
 
-            ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.exists("ai_requests") else 0) + 1
+            ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
             self.statsDB.set("ai_requests", ai_requests)
             self.statsDB.dump()
         except Exception as e:
@@ -747,7 +747,7 @@ class Ai(commands.Cog, name="🤖 AI"):
         loop = asyncio.get_running_loop()
         data = await loop.run_in_executor(None, functools.partial(prompt_ai, prompt, groq_client=client))
 
-        ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.exists("ai_requests") else 0) + 1
+        ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
         self.statsDB.set("ai_requests", ai_requests)
         self.statsDB.dump()
 
