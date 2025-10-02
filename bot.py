@@ -37,8 +37,8 @@ client = pymongo.MongoClient(os.getenv("MONGODB_URL"))
 db = client.potatobot
 
 os.makedirs("pickle", exist_ok=True)
-prefixDB = PickleDB("pickle/prefix.db", False)
-statsDB = PickleDB("pickle/stats.db", False)
+prefixDB = PickleDB("pickle/prefix.db")
+statsDB = PickleDB("pickle/stats.db")
 
 cant_react_in = []
 

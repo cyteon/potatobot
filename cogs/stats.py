@@ -13,7 +13,7 @@ from pickledb import PickleDB
 
 from utils import Checks
 
-db = PickleDB('pickle/charts.db', False)
+db = PickleDB('pickle/charts.db')
 
 def textangle(draw, text, xy, angle, fill, font):
     img = Image.new('RGBA', font.getsize(text))
