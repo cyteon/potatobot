@@ -55,7 +55,7 @@ class Server(commands.Cog, name="⚙️ Server"):
 
         guild_id = str(context.guild.id)
         self.prefixDB.set(guild_id, prefix)
-        self.prefixDB.dump()
+        self.prefixDB.save()
         await context.send(f"Prefix set to {prefix}")
 
     @commands.hybrid_command(

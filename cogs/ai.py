@@ -519,7 +519,7 @@ class Ai(commands.Cog, name="🤖 AI"):
 
                 ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
                 self.statsDB.set("ai_requests", ai_requests)
-                self.statsDB.dump()
+                self.statsDB.save()
 
         except Exception as e:
             logger.error(f"Error in AI: {e}")
@@ -631,7 +631,7 @@ class Ai(commands.Cog, name="🤖 AI"):
 
             ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
             self.statsDB.set("ai_requests", ai_requests)
-            self.statsDB.dump()
+            self.statsDB.save()
         except Exception as e:
             logger.error(f"Error in AI: {e}")
             await context.reply("An error in the AI has occured")
@@ -749,7 +749,7 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
         self.statsDB.set("ai_requests", ai_requests)
-        self.statsDB.dump()
+        self.statsDB.save()
 
         newChannel = await context.channel.create_thread(
             name=f"AI Convo - {context.author}",

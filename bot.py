@@ -247,7 +247,7 @@ class DiscordBot(commands.AutoShardedBot):
 
         commands_ran = (statsDB.get("commands_ran") if statsDB.get("commands_ran") else 0) + 1
         statsDB.set("commands_ran", commands_ran)
-        statsDB.dump()
+        statsDB.save()
 
     async def on_command_error(self, context: commands.Context, error) -> None:
         if isinstance(error, commands.CommandOnCooldown):

@@ -57,7 +57,7 @@ class Stats(commands.Cog, name="📈 Stats"):
             if (current_date - date).days > 30:
                 del guild_data[date_str]
 
-        db.dump()
+        db.save()
 
     @commands.hybrid_group(
         name="chart",
