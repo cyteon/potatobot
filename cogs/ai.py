@@ -70,7 +70,6 @@ models = [
     "llama-3.1-8b-instant",
     "llama3-groq-70b-8192-tool-use-preview",
     "llama3-groq-8b-8192-tool-use-preview",
-    "gemma2-9b-it"
 ]
 
 api_key = os.getenv('FUSION_API_KEY')
