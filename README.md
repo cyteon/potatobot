@@ -18,7 +18,7 @@ Invite: https://discord.com/oauth2/authorize?client_id=1226487228914602005
 
 2. Switch to v3-js branch:
 ```bash
-git checkout v3-js # only applies while in development
+  git checkout v3-js # only applies while in development
 ```
 
 3. Go to the project directory:
