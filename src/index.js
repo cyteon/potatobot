@@ -48,7 +48,7 @@ mongoose.connect(process.env.MONGODB_URL);
 
 console.log(chalk.green("Connected to MongoDB."));
 
-const Nodes = [
+const nodes = [
   {
     name: process.env.LAVALINK_NAME,
     url: process.env.LAVALINK_HOST + ":" + process.env.LAVALINK_PORT,
@@ -77,7 +77,7 @@ const kazagumo = new Kazagumo(
     },
   },
   new Connectors.DiscordJS(client),
-  Nodes,
+  nodes,
 );
 client.kazagumo = kazagumo;
 

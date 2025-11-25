@@ -11,6 +11,7 @@ const globalUserSchema = new mongoose.Schema({
       return val.toString();
     },
   },
+  
   blacklisted: Boolean,
   blacklist_reason: String,
   ai_ignore: Boolean,
