@@ -13,10 +13,10 @@ Invite: https://discord.com/oauth2/authorize?client_id=1226487228914602005
 1. Clone the project:
 
 ```bash
-  git clone https://github.com/Cyteon/potatobot
+  git clone https://github.com/cyteon/potatobot
 ```
 
-2. Switch to v3-js branch:
+2. Switch to the v3-js branch:
 ```bash
   git checkout v3-js # only applies while in development
 ```
@@ -27,19 +27,18 @@ Invite: https://discord.com/oauth2/authorize?client_id=1226487228914602005
   cd potatobot
 ```
 
-4. Install the required Python dependencies:
+4. Install the required dependencies:
 
 ```bash
-  npm install
+  npm i
 ```
 
 5. Rename `.env.example` to `.env`, and populate the required values.
-6. Rename `config.example.json` to `config.json` and populate the required values.
 
-7. Run the bot:
+6. Run the bot:
 
 ```bash
   node .
 ```
 
-8. Profit.
+7. Profit.
