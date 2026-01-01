@@ -38,6 +38,10 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
             if not guild["starboard"]["enabled"]:
                 return
 
+        if "blacklisted_channels" in guild["starboard"]:
+            if payload.channel_id in guild["starboard"]["blacklisted_channels"]:
+                return
+
         starboard_col = db["starboard"]
         starboard_message = await CachedDB.find_one(starboard_col, {"message_id": message.id})
         starboard_channel = self.bot.get_channel(guild["starboard"]["channel"])
@@ -112,6 +116,10 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
         if "enabled" in guild["starboard"]:
             if not guild["starboard"]["enabled"]:
                 return
+        
+        if "blacklisted_channels" in guild["starboard"]:
+            if payload.channel_id in guild["starboard"]["blacklisted_channels"]:
+                return
 
         star_reactions = 0
         for r in message.reactions:
@@ -123,6 +131,9 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
         starboard_channel = self.bot.get_channel(guild["starboard"]["channel"])
 
         if not starboard_channel:
+            return
+
+        if not starboard_message:
             return
 
         if payload.emoji.name == "⭐":
@@ -139,9 +150,9 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
             if message.attachments:
                 embed.set_image(url=message.attachments[0].url)
 
-            starboard_message = await starboard_channel.fetch_message(starboard_message["starboard_id"])
+            starboard_message_obj = await starboard_channel.fetch_message(starboard_message["starboard_id"])
 
-            await starboard_message.edit(content=label, embed=embed, view=JumpToMessageView(message))
+            await starboard_message_obj.edit(content=label, embed=embed, view=JumpToMessageView(message))
 
     @commands.hybrid_group(
         name="starboard",
@@ -151,14 +162,13 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def starboard(self, context: Context) -> None:
+        prefix = await self.bot.get_prefix(context)
         subcommands = [cmd for cmd in self.starboard.walk_commands()]
-
         data = []
 
         for subcommand in subcommands:
-            print(subcommand)
             description = subcommand.description.partition("\n")[0]
-            data.append(f"{await self.bot.get_prefix(context)}starboard {subcommand.name} - {description}")
+            data.append(f"{prefix}starboard {subcommand.qualified_name.replace('starboard ', '')} - {description}")
 
         help_text = "\n".join(data)
         embed = discord.Embed(
@@ -183,7 +193,6 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
         guild = await CachedDB.find_one(col, {"id": context.guild.id})
 
         if not guild:
-            guild = CONSTANTS.guild_data_template(context.guild.id)
             await col.insert_one(CONSTANTS.guild_data_template(context.guild.id))
 
         newdata = {
@@ -197,7 +206,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
     @starboard.command(
         name="threshold",
-        description="Set the starboard threshold required to show in starboard channel",
+        description="Set the star threshold for the starboard.",
         usage="starboard threshold <threshold>"
     )
     @commands.check(Checks.is_not_blacklisted)
@@ -208,8 +217,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
         guild = await CachedDB.find_one(col, {"id": context.guild.id})
 
         if not guild:
-            guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
+            await col.insert_one(CONSTANTS.guild_data_template(context.guild.id))
 
         newdata = {
             "$set": {
@@ -219,6 +227,58 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
         await CachedDB.update_one(col, {"id": context.guild.id}, newdata)
         await context.send(f"Starboard threshold set to {threshold}.")
+
+    @starboard.group(
+        name="blacklist",
+        description="Manage blacklisted channels for the starboard.",
+        usage="starboard blacklist <add/remove>"
+    )
+    @commands.check(Checks.is_not_blacklisted)
+    @commands.check(Checks.command_not_disabled)
+    @commands.has_permissions(manage_channels=True)
+    async def blacklist(self, context: Context) -> None:
+        if context.invoked_subcommand is None:
+            await context.send_help(context.command)
+
+    @blacklist.command(
+        name="add",
+        description="Add a channel to the starboard blacklist.",
+        usage="starboard blacklist add <channel>"
+    )
+    @commands.check(Checks.is_not_blacklisted)
+    @commands.check(Checks.command_not_disabled)
+    @commands.has_permissions(manage_channels=True)
+    async def blacklist_add(self, context: Context, channel: discord.TextChannel) -> None:
+        col = db["guilds"]
+        guild = await CachedDB.find_one(col, {"id": context.guild.id})
+
+        if not guild:
+            await col.insert_one(CONSTANTS.guild_data_template(context.guild.id))
+            guild = await CachedDB.find_one(col, {"id": context.guild.id})
+
+        if "blacklisted_channels" not in guild["starboard"]:
+            await col.update_one({"id": context.guild.id}, {"$set": {"starboard.blacklisted_channels": []}})
+
+        await col.update_one({"id": context.guild.id}, {"$addToSet": {"starboard.blacklisted_channels": channel.id}})
+        await context.send(f"{channel.mention} has been added to the starboard blacklist.")
+
+    @blacklist.command(
+        name="remove",
+        description="Remove a channel from the starboard blacklist.",
+        usage="starboard blacklist remove <channel>"
+    )
+    @commands.check(Checks.is_not_blacklisted)
+    @commands.check(Checks.command_not_disabled)
+    @commands.has_permissions(manage_channels=True)
+    async def blacklist_remove(self, context: Context, channel: discord.TextChannel) -> None:
+        col = db["guilds"]
+        guild = await CachedDB.find_one(col, {"id": context.guild.id})
+
+        if not guild or "blacklisted_channels" not in guild["starboard"]:
+            return await context.send("This channel is not blacklisted.")
+
+        await col.update_one({"id": context.guild.id}, {"$pull": {"starboard.blacklisted_channels": channel.id}})
+        await context.send(f"{channel.mention} has been removed from the starboard blacklist.")
 
     @starboard.command(
         name="disable",
@@ -230,18 +290,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
     @commands.has_permissions(manage_channels=True)
     async def disable_starboard(self, context: Context) -> None:
         col = db["guilds"]
-        guild = await CachedDB.find_one(col, {"id": context.guild.id})
-
-        if not guild:
-            guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
-
-        newdata = {
-            "$set": {
-                "starboard.enabled": False
-            }
-        }
-
+        newdata = {"$set": {"starboard.enabled": False}}
         await CachedDB.update_one(col, {"id": context.guild.id}, newdata)
         await context.send("Starboard disabled.")
 
@@ -252,22 +301,10 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-
     @commands.has_permissions(manage_channels=True)
     async def enable_starboard(self, context: Context) -> None:
         col = db["guilds"]
-        guild = await CachedDB.find_one(col, {"id": context.guild.id})
-
-        if not guild:
-            guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
-
-        newdata = {
-            "$set": {
-                "starboard.enabled": True
-            }
-        }
-
+        newdata = {"$set": {"starboard.enabled": True}}
         await CachedDB.update_one(col, {"id": context.guild.id}, newdata)
         await context.send("Starboard enabled.")
 
