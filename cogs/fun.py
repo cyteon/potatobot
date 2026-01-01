@@ -883,6 +883,10 @@ class Fun(commands.Cog, name="🎉 Fun"):
             await context.send("Please upload a valid image file!")
             return
 
+        if attachment.size > 20 * 1024 * 1024:
+            await context.send("The image is too large! Please upload a file smaller than 20MB.")
+            return
+
         async with context.typing():
             image_bytes = await attachment.read()
             img_input = io.BytesIO(image_bytes)
