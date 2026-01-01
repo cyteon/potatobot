@@ -7,6 +7,7 @@ import aiohttp
 import json
 import requests
 import io
+from PIL import Image
 
 from io import BytesIO
 from discord.ui import Button, View
@@ -867,6 +868,44 @@ class Fun(commands.Cog, name="🎉 Fun"):
             return
 
         await context.send(f"{context.author.mention} vs {opponent.mention}!", view=TicTacToeView(context.author, opponent))
+
+    @commands.hybrid_command(
+        name="togif",
+        description="Convert an uploaded image (PNG/JPG) into a GIF",
+        usage="togif [upload image]"
+    )
+    @commands.check(Checks.is_not_blacklisted)
+    @commands.check(Checks.command_not_disabled)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def togif(self, context: Context, attachment: discord.Attachment) -> None:
+        if not attachment.content_type or not attachment.content_type.startswith("image"):
+            await context.send("Please upload a valid image file!")
+            return
+
+        if attachment.size > 20 * 1024 * 1024:
+            await context.send("The image is too large! Please upload a file smaller than 20MB.")
+            return
+
+        async with context.typing():
+            image_bytes = await attachment.read()
+            img_input = io.BytesIO(image_bytes)
+            
+            try:
+                with Image.open(img_input) as img:
+                    if img.mode in ("RGBA", "P"):
+                        img = img.convert("RGB")
+                    
+                    output_buffer = io.BytesIO()
+                    img.save(output_buffer, format="GIF")
+                    output_buffer.seek(0)
+                    
+                    await context.send(
+                        file=discord.File(fp=output_buffer, filename="converted.gif")
+                    )
+            except Exception as e:
+                self.bot.logger.error(f"Error in togif command: {e}")
+                await context.send("Failed to convert image to GIF. Ensure the file is a valid image.")
 
 async def setup(bot) -> None:
     await bot.add_cog(Fun(bot))
