@@ -22,6 +22,15 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  warnings: {
+    type: [
+      {
+        reason: String,
+        time: String,
+      },
+    ],
+    default: [],
+  },
 });
 
 export default mongoose.model("User", userSchema, "users");
