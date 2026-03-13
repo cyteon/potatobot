@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 import OpenAI from "openai";
 import AiConvo from "../../models/AiConvo.js";
+import Stats from "../../models/Stats.js";
 import { RateLimiter } from "discord.js-rate-limiter";
 
 let rateLimiter = new RateLimiter(1, 2000);
@@ -98,6 +99,7 @@ const execute = async function (interaction) {
       });
 
       aiResponse = response.choices[0].message.content;
+      Stats.findOneAndUpdate({}, { $inc: { ai_requests: 1 } }, { upsert: true }).exec();
       break;
     } catch (error) {
       console.error(error);

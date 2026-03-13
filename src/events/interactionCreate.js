@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import GlobalUser from "../models/GlobalUser.js";
 import Guild from "../models/Guild.js";
+import Stats from "../models/Stats.js";
 
 const ai_commands = ["imagine"];
 
@@ -45,6 +46,7 @@ export default {
 
       try {
         await command.execute(interaction, client);
+        Stats.findOneAndUpdate({}, { $inc: { commands_ran: 1 } }, { upsert: true }).exec();
       } catch (error) {
         console.error(error);
         try {

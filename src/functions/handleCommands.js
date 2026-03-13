@@ -13,6 +13,7 @@ export default (client) => {
   client.handleCommands = async (commandFolders, path) => {
     console.log(chalk.yellow("Started loading commands."));
     client.commandArray = [];
+    client.categories = new Set();
 
     for (const folder of commandFolders) {
       const commandFiles = fs
@@ -31,6 +32,7 @@ export default (client) => {
           const { default: command } = await import(
             `../commands/${folder}/${file}`
           );
+          command.category = folder;
           client.commands.set(command.data.name, command);
 
           if (command.data instanceof SlashCommandBuilder) {
@@ -48,6 +50,8 @@ export default (client) => {
           );
         }
       }
+
+      client.categories.add(folder);
 
       for (const subFolder of subFolders) {
         try {
@@ -178,6 +182,7 @@ export default (client) => {
             execute: execute,
           };
 
+          data.category = folder;
           client.commands.set(subFolder, data);
           client.commandArray.push(cmd.toJSON());
 
