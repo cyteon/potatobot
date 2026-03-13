@@ -36,12 +36,12 @@ const execute = async (interaction) => {
         }
 
         return interaction.reply({
-            content: `Successfully removed the role for level **${level}**!`,
+            content: `removed the role for level **${level}**! :D`,
         });
     } catch (error) {
         console.error("Error removing level role:", error);
         return interaction.reply({
-            content: "An error occurred while removing the level role :c",
+            content: "uh oh, couldn't remove that level role :c",
             ephemeral: true,
         });
     }

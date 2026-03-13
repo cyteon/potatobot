@@ -33,7 +33,7 @@ const execute = async (interaction) => {
     } catch (error) {
         console.error("Error enabling starboard:", error);
         return interaction.reply({
-            content: "An error occurred while enabling the starboard :c",
+            content: "uh oh, couldn't enable the starboard :c",
             ephemeral: true,
         });
     }

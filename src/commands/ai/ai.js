@@ -34,11 +34,9 @@ const replaceList = [
 ];
 
 const models = [
-  "llama-3.2-11b-text-preview",
-  "llama-3.1-8b-instant",
-  "llama3-groq-70b-8192-tool-use-preview",
-  "llama3-groq-8b-8192-tool-use-preview",
-  "gemma2-9b-it",
+  "llama-3.3-70b-versatile",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b"
 ];
 
 const data = new SlashCommandBuilder()
@@ -103,7 +101,7 @@ const execute = async function (interaction) {
       break;
     } catch (error) {
       console.error(error);
-      aiResponse = "An error occurred while talking to the AI.";
+      aiResponse = "uh oh, the AI broke :c try again maybe?";
     }
   }
 
@@ -122,7 +120,7 @@ const execute = async function (interaction) {
     const file = Buffer.from(aiResponse, "utf-8");
 
     await interaction.editReply({
-      content: "The response was too long, so here's a file instead.",
+      content: "woah that's a lot of text :O here's a file instead",
       files: [
         {
           attachment: file,

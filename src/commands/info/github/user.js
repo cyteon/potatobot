@@ -20,7 +20,7 @@ const execute = async function (interaction) {
     const userData = await response.json();
 
     if (response.status !== 200) {
-      return await interaction.reply("User not found!");
+      return await interaction.reply("couldn't find that user :O");
     }
 
     const embed = new EmbedBuilder()

@@ -108,7 +108,7 @@ const execute = async function (interaction) {
         game.board[id - 1] = "X";
       } else {
         await interaction.editReply({
-          content: "Invalid move",
+          content: "that spot's taken silly! :p",
           components: buttonRows,
           ephemeral: false,
         });
@@ -265,7 +265,7 @@ const execute = async function (interaction) {
     } catch (error) {
       console.error(error);
       await interaction.editReply({
-        content: "Error occured: " + error,
+        content: "something broke :c " + error,
         components: [],
       });
       break;

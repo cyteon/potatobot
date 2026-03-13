@@ -27,7 +27,7 @@ const execute = async (interaction) => {
     } catch (error) {
         console.error("Error disabling starboard:", error);
         return interaction.reply({
-            content: "An error occurred while disabling the starboard D:",
+            content: "uh oh, couldn't disable the starboard D:",
             ephemeral: true,
         });
     }

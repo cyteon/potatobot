@@ -37,7 +37,7 @@ const execute = async (interaction) => {
     } catch (error) {
         console.error("Error updating starboard threshold:", error);
         return interaction.reply({
-            content: "An error occurred while setting the starboard threshold :(",
+            content: "uh oh, couldn't set the threshold :(",
             ephemeral: true,
         });
     }

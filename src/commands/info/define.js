@@ -37,7 +37,7 @@ const execute = async function (interaction) {
         const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
 
         if (res.status === 404) {
-            return await interaction.reply("Word not found.");
+            return await interaction.reply("couldn't find that word :( are you sure you spelled it right?");
         }
 
         const data = (await res.json())[0]
@@ -61,7 +61,7 @@ const execute = async function (interaction) {
         const data = await res.json();
 
         if (data.list.length === 0) {
-            return await interaction.reply("Word not found.");
+            return await interaction.reply("couldn't find that word :( urban dictionary doesn't know it either lol");
         }
 
         let definition = data.list[0];

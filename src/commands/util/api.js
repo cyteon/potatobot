@@ -37,13 +37,13 @@ const execute = async function (interaction) {
     const res = await fetch(`https://api.mcsrvstat.us/3/${address}`);
 
     if (!res.ok) {
-      return interaction.reply("An error occurred while fetching the data");
+      return interaction.reply("uh oh, couldn't grab the data :c");
     }
 
     const data = await res.json();
 
     if (!data.online) {
-      return interaction.reply("The server is offline");
+      return interaction.reply("that server's offline :( maybe it's napping?");
     }
 
     const embed = {

@@ -92,7 +92,7 @@ const execute = async (interaction, client) => {
     } catch (error) {
         console.error("Error adding reaction role:", error);
         return interaction.reply({
-            content: "An error occurred while adding the reaction role D:",
+            content: "uh oh, couldn't add the reaction role D:",
             ephemeral: true,
         });
     }

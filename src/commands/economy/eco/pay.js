@@ -113,7 +113,7 @@ Are you sure you want to proceed?
       });
     } else if (i.customId === `cancel-${interaction.id}`) {
       await i.update({
-        content: "Transaction canceled.",
+        content: "nevermind then! :p",
         embeds: [],
         components: [],
       });
@@ -123,7 +123,7 @@ Are you sure you want to proceed?
   collector.on("end", async (_) => {
     if (!collected) {
       await msg.edit({
-        content: "Transaction timed out.",
+        content: "you took too long :O payment canceled!",
         embeds: [],
         components: [],
       });

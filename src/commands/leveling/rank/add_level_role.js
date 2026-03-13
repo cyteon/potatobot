@@ -66,13 +66,13 @@ const execute = async (interaction) => {
     }
 
     return interaction.reply({
-      content: `Successfully added <@&${role.id}> for level **${level}**!`,
+      content: `added <@&${role.id}> for level **${level}**! :D`,
       allowedMentions: { roles: [] },
     });
   } catch (error) {
     console.error("Error updating level roles:", error);
     return interaction.reply({
-      content: "An error occurred while updating the level roles :c",
+      content: "uh oh, something broke while updating level roles :c",
       ephemeral: true,
     });
   }

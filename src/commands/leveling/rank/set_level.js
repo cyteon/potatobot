@@ -50,12 +50,12 @@ const execute = async (interaction) => {
     }
 
     return interaction.reply({
-      content: `Successfully set **${user.tag}**'s level to **${level}**!`,
+      content: `set **${user.tag}**'s level to **${level}**! :D`,
     });
   } catch (error) {
     console.error("Error updating user level:", error);
     return interaction.reply({
-      content: "An error occurred while updating the user's level :c",
+      content: "uh oh, something broke while updating the level :c",
       ephemeral: true,
     });
   }

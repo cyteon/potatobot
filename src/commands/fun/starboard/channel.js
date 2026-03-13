@@ -36,7 +36,7 @@ const execute = async (interaction) => {
     } catch (error) {
         console.error("Error updating starboard channel:", error);
         return interaction.reply({
-            content: "An error occurred while setting the starboard channel :(",
+            content: "uh oh, couldn't set the starboard channel :(",
             ephemeral: true,
         });
     }

@@ -26,9 +26,9 @@ const execute = async function (interaction) {
     const repoData = await response.json();
 
     if (response.status == 404) {
-      return await interaction.reply("Repo not found!");
+      return await interaction.reply("couldn't find that repo :O");
     } else if (response.status == 429) {
-      return await interaction.reply("Rate limited by GitHub API");
+      return await interaction.reply("github's telling me to slow down :c try again in a bit!");
     }
 
     const embed = new EmbedBuilder()

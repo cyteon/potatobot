@@ -42,7 +42,7 @@ const execute = async function (interaction) {
     });
   } else {
     await interaction.reply({
-      content: "Failed to fetch a random activity",
+      content: "couldn't find an activity :c the api might be napping",
       ephemeral: true,
     });
   }

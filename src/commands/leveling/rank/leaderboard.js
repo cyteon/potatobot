@@ -42,7 +42,7 @@ const execute = async (interaction) => {
     console.error("Error fetching leaderboard data:", error);
 
     return interaction.reply({
-      content: "An error occurred while fetching the leaderboard data :c",
+      content: "uh oh, couldn't load the leaderboard :c",
       ephemeral: true,
     });
   }

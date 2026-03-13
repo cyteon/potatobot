@@ -49,7 +49,7 @@ export default {
         console.error(error);
         try {
           await interaction.reply({
-            content: "There was an error while executing this command!",
+            content: "oops, something broke :c",
             ephemeral: true,
           });
         } catch (error) {
@@ -65,14 +65,14 @@ export default {
 
         if (!guildData) {
           return await interaction.reply({
-            content: "This server does not have tickets set up!",
+            content: "this server doesn't have tickets set up yet! :O",
             ephemeral: true,
           });
         }
 
         if (!guildData.ticketChannel) {
           return await interaction.reply({
-            content: "This server does not have tickets set up!",
+            content: "this server doesn't have tickets set up yet! :O",
             ephemeral: true,
           });
         }
@@ -83,7 +83,7 @@ export default {
 
         if (!ticketChannel) {
           return await interaction.reply({
-            content: "This server does not have tickets set up correctly!",
+            content: "this server's ticket setup is broken :c tell an admin!",
             ephemeral: true,
           });
         }
@@ -94,7 +94,7 @@ export default {
 
         if (!ticketLogChannel) {
           return await interaction.reply({
-            content: "This server does not have tickets set up correctly!",
+            content: "this server's ticket setup is broken :c tell an admin!",
             ephemeral: true,
           });
         }
@@ -107,7 +107,7 @@ export default {
 
         if (existingTicket) {
           return await interaction.reply({
-            content: "You already have an open ticket!",
+            content: "you already have an open ticket silly :p",
             ephemeral: true,
           });
         }
@@ -128,7 +128,7 @@ export default {
             {
               color: 0x56b3fa,
               title: "Ticket opened",
-              description: `Please describe your issue here. Staff will be with you shortly.`,
+              description: `describe your issue here and staff will be with you soon! :)`,
             },
           ],
           components: [
@@ -190,7 +190,7 @@ export default {
             interaction.user.username !== interaction.channel.name.split("-")[1]
           ) {
             return interaction.reply({
-              content: "You do not have permission to use this command",
+              content: "you can't do that! >:(",
               ephemeral: true,
             });
           }
@@ -253,7 +253,7 @@ export default {
 
         if (!ticket) {
           return interaction.reply({
-            content: "This ticket no longer exists!",
+            content: "that ticket doesn't exist anymore :O",
             ephemeral: true,
           });
         }
@@ -279,7 +279,7 @@ export default {
         });
 
         await interaction.reply({
-          content: "You have joined the ticket!",
+          content: "joined the ticket! :D",
           ephemeral: true,
         });
       } else if (interaction.customId == "reopen_ticket") {
@@ -289,14 +289,14 @@ export default {
 
         if (!ticket) {
           return interaction.reply({
-            content: "This ticket no longer exists!",
+            content: "that ticket doesn't exist anymore :O",
           });
         }
 
         await ticket.setArchived(false);
 
         await interaction.reply({
-          content: "Ticket has been reopened!",
+          content: "ticket reopened! :D",
         });
 
         await ticket.send({

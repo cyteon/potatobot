@@ -20,12 +20,12 @@ const execute = async (interaction) => {
     );
 
     return interaction.reply({
-      content: "Successfully reset all users' levels and XP in this server!",
+      content: "nuked everyone's levels and XP in this server :3",
     });
   } catch (error) {
     console.error("Error resetting user data:", error);
     return interaction.reply({
-      content: "An error occurred while resetting user data :c",
+      content: "uh oh, something broke while resetting user data :c",
       ephemeral: true,
     });
   }

@@ -44,7 +44,7 @@ const execute = async (interaction) => {
     console.error("Error fetching user data:", error);
 
     return interaction.reply({
-      content: "An error occurred while fetching the user data",
+      content: "uh oh, couldn't grab your data :c",
       ephemeral: true,
     });
   }
