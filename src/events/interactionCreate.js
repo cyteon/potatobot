@@ -163,7 +163,7 @@ export default {
               description: `A ticket has been made by <@${interaction.user.id}>`,
               color: 0x56b3fa,
               footer: {
-                text: ticket.id,
+                text: `${ticket.id} - requires attention (0 members)`,
               },
             },
           ],
@@ -177,6 +177,13 @@ export default {
                   emoji: "🔓",
                   label: "Join ticket",
                   custom_id: "join_ticket",
+                },
+                {
+                  type: 2,
+                  style: 5,
+                  emoji: "🎫",
+                  label: "View ticket",
+                  url: ticket.url,
                 },
               ],
             },
@@ -249,7 +256,7 @@ export default {
 
         await interaction.channel.setArchived(true);
       } else if (interaction.customId == "join_ticket") {
-        const id = interaction.message.embeds[0].footer.text;
+        const id = interaction.message.embeds[0].footer.text.split(" - ")[0];
 
         const ticket = interaction.guild.channels.cache.get(id);
 
@@ -269,7 +276,7 @@ export default {
 
         if (memberInTicket) {
           return await interaction.reply({
-            content: "You are already in this ticket!",
+            content: "you're already in this ticket silly :p",
             ephemeral: true,
           });
         }
@@ -284,8 +291,33 @@ export default {
           content: "joined the ticket! :D",
           ephemeral: true,
         });
+
+        const logEmbed = interaction.message.embeds[0];
+        const openerMatch = logEmbed.description.match(/<@(\d+)>/);
+        const openerId = openerMatch?.[1];
+
+        const threadMembers = await ticket.members.fetch();
+        const staffCount = threadMembers.filter(
+          (m) => m.id !== client.user.id && m.id !== openerId,
+        ).size;
+
+        const countStr =
+          staffCount === 0
+            ? `${id} - requires attention (0 members)`
+            : `${id} - ${staffCount} member${staffCount === 1 ? "" : "s"}`;
+
+        await interaction.message.edit({
+          embeds: [
+            {
+              title: logEmbed.title,
+              description: logEmbed.description,
+              color: logEmbed.color,
+              footer: { text: countStr },
+            },
+          ],
+        });
       } else if (interaction.customId == "reopen_ticket") {
-        const id = interaction.message.embeds[0].footer.text;
+        const id = interaction.message.embeds[0].footer.text.split(" - ")[0];
 
         const ticket = interaction.guild.channels.cache.get(id);
 
