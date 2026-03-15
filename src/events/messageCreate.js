@@ -7,9 +7,9 @@ import GlobalUser from "../models/GlobalUser.js";
 import { LEVELS } from "../utils/levels.js";
 
 const FILTERS = [
-  { old: "@everyone", new: "@\u200beveryone" },
-  { old: "@here",     new: "@\u200bhere" },
-  { old: "<@&",       new: "<@&\u200b" },
+  { old: "@everyone",          new: "@\u200beveryone" },
+  { old: "@here",              new: "@\u200bhere" },
+  { old: "<@&",                new: "<@&\u200b" },
   { old: "discord.gg",         new: "[filtered]" },
   { old: "discord.com/invite", new: "[filtered]" },
 ];
