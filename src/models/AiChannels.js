@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const aiChannelsSchema = new mongoose.Schema({
+  listOfChannels: Boolean,
   ai_channels: [String],
 });
 

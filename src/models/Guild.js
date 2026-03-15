@@ -37,6 +37,8 @@ const guildsSchema = new mongoose.Schema({
   },
 
   ai_access: Boolean,
+  groq_api_key: { type: String, default: "NONE" },
+  system_prompt: { type: String, default: "NONE" },
 
   level_roles: Map,
   
