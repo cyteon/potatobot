@@ -1,20 +1,20 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
 import random
-import discord
 import time
 
+import discord
 from discord import ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from utils import CONSTANTS, DBClient, CachedDB, Checks
 from ui.farm import FarmButton
 from ui.gambling import GamblingButton
-
 from ui.papertrading import start_paper_trading
+from utils import CONSTANTS, CachedDB, Checks, DBClient
 
 db = DBClient.db
+
 
 class Economy(commands.Cog, name="🪙 Economy"):
     def __init__(self, bot) -> None:
@@ -24,7 +24,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
         name="balance",
         aliases=["wallet", "bal"],
         description="See yours or someone else's wallet",
-        usage="balance [optional: user]"
+        usage="balance [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -42,24 +42,22 @@ class Economy(commands.Cog, name="🪙 Economy"):
         await context.send(f"**{user}** has ${data['wallet']} in their wallet")
 
     @commands.hybrid_command(
-        name="daily",
-        description="Get your daily cash",
-        usage="daily"
+        name="daily", description="Get your daily cash", usage="daily"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def daily(self, context: Context) -> None:
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
             c.insert_one(data)
         if time.time() - data["last_daily"] < 86400:
             eta = data["last_daily"] + 86400
-            await context.send(
-                f"You can claim your daily cash <t:{int(eta)}:R>"
-            )
+            await context.send(f"You can claim your daily cash <t:{int(eta)}:R>")
             return
 
         guild = db["guilds"]
@@ -70,25 +68,23 @@ class Economy(commands.Cog, name="🪙 Economy"):
             guild.insert_one(guild_data)
 
         data["wallet"] += guild_data["daily_cash"]
-        newdata = {
-            "$set": {"wallet": data["wallet"], "last_daily": time.time()}
-        }
+        newdata = {"$set": {"wallet": data["wallet"], "last_daily": time.time()}}
 
-        await CachedDB.update_one(c, {"id": context.author.id, "guild_id": context.guild.id}, newdata)
+        await CachedDB.update_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}, newdata
+        )
 
         await context.send(f"Added {guild_data['daily_cash']}$ to wallet")
 
-    @commands.hybrid_command(
-        name="beg",
-        description="Beg for money",
-        usage="beg"
-    )
+    @commands.hybrid_command(name="beg", description="Beg for money", usage="beg")
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @commands.cooldown(1, 600, commands.BucketType.user)
     async def beg(self, context: Context) -> None:
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
@@ -97,18 +93,16 @@ class Economy(commands.Cog, name="🪙 Economy"):
         amount = random.randint(5, 200)
         data["wallet"] += amount
 
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
+        newdata = {"$set": {"wallet": data["wallet"]}}
 
-        await CachedDB.update_one(c, {"id": context.author.id, "guild_id": context.guild.id}, newdata)
+        await CachedDB.update_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}, newdata
+        )
 
         await context.send(f"Someone gave you {amount}$!")
 
     @commands.hybrid_command(
-        name="rob",
-        description="Rob someone's wallet",
-        usage="rob <user>"
+        name="rob", description="Rob someone's wallet", usage="rob <user>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -120,7 +114,9 @@ class Economy(commands.Cog, name="🪙 Economy"):
 
         c = db["users"]
 
-        target_data = await CachedDB.find_one(c, {"id": user.id, "guild_id": context.guild.id})
+        target_data = await CachedDB.find_one(
+            c, {"id": user.id, "guild_id": context.guild.id}
+        )
 
         if not target_data:
             return await context.send("User has no money")
@@ -128,19 +124,21 @@ class Economy(commands.Cog, name="🪙 Economy"):
         if target_data["wallet"] == 0:
             return await context.send("User has no money")
 
-        author_data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        author_data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not author_data:
-            author_data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
+            author_data = CONSTANTS.user_data_template(
+                context.author.id, context.guild.id
+            )
             c.insert_one(author_data)
 
         max_payout = max(1, target_data["wallet"] // 5)
 
         if target_data["last_robbed_at"] > time.time() - 10800:
             eta = target_data["last_robbed_at"] + 10800
-            await context.send(
-                f"This user can be robbed again <t:{int(eta)}:R>"
-            )
+            await context.send(f"This user can be robbed again <t:{int(eta)}:R>")
             return
 
         result = random.randint(0, 2)
@@ -156,18 +154,23 @@ class Economy(commands.Cog, name="🪙 Economy"):
             }
 
             newdata2 = {
-                "$set": {
-                    "wallet": target_data["wallet"],
-                    "last_robbed_at": time.time()
-                }
+                "$set": {"wallet": target_data["wallet"], "last_robbed_at": time.time()}
             }
 
-            await CachedDB.update_one(c, {"id": context.author.id, "guild_id": context.guild.id}, newdata)
-            await CachedDB.update_one(c, {"id": user.id, "guild_id": context.guild.id}, newdata2)
+            await CachedDB.update_one(
+                c, {"id": context.author.id, "guild_id": context.guild.id}, newdata
+            )
+            await CachedDB.update_one(
+                c, {"id": user.id, "guild_id": context.guild.id}, newdata2
+            )
 
             await context.send(f"You successfully robbed {user} and got {payout}$")
         elif result == 1:
-            payout = min(random.randint(1, max(1, max_payout//2)), author_data["wallet"]//3, 10000)
+            payout = min(
+                random.randint(1, max(1, max_payout // 2)),
+                author_data["wallet"] // 3,
+                10000,
+            )
             author_data["wallet"] -= payout
             target_data["wallet"] += payout
 
@@ -181,17 +184,19 @@ class Economy(commands.Cog, name="🪙 Economy"):
                 "$set": {"wallet": target_data["wallet"], "last_robbed_at": time.time()}
             }
 
-            await CachedDB.update_one(c, {"id": context.author.id, "guild_id": context.guild.id}, newdata)
-            await CachedDB.update_one(c, {"id": user.id, "guild_id": context.guild.id}, newdata2)
+            await CachedDB.update_one(
+                c, {"id": context.author.id, "guild_id": context.guild.id}, newdata
+            )
+            await CachedDB.update_one(
+                c, {"id": user.id, "guild_id": context.guild.id}, newdata2
+            )
 
             await context.send(f"You got caught by {user} and they took {payout}$")
         else:
             await context.send(f"You failed to rob {user}, but lost nothing")
 
     @commands.hybrid_command(
-        name="baltop",
-        description="See the top 10 richest users",
-        usage="baltop"
+        name="baltop", description="See the top 10 richest users", usage="baltop"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -223,7 +228,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
     @commands.hybrid_command(
         name="pay",
         description="Pay someone from your wallet",
-        usage="pay <user> <amount>"
+        usage="pay <user> <amount>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -237,7 +242,9 @@ class Economy(commands.Cog, name="🪙 Economy"):
             return
 
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
@@ -253,22 +260,22 @@ class Economy(commands.Cog, name="🪙 Economy"):
             c.insert_one(target_user_data)
         data["wallet"] -= amount
         target_user_data["wallet"] += amount
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-        newdata2 = {
-            "$set": {"wallet": target_user_data["wallet"]}
-        }
+        newdata = {"$set": {"wallet": data["wallet"]}}
+        newdata2 = {"$set": {"wallet": target_user_data["wallet"]}}
 
-        await CachedDB.update_one(c, {"id": context.author.id, "guild_id": context.guild.id}, newdata)
-        await CachedDB.update_one(c, {"id": user.id, "guild_id": context.guild.id}, newdata2)
+        await CachedDB.update_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}, newdata
+        )
+        await CachedDB.update_one(
+            c, {"id": user.id, "guild_id": context.guild.id}, newdata2
+        )
 
         await context.send(f"Paid {amount}$ to {user.mention}")
 
     @commands.hybrid_command(
         name="set",
         description="Set someones wallet (admin only)",
-        usage="set <user> <amount>"
+        usage="set <user> <amount>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -276,25 +283,25 @@ class Economy(commands.Cog, name="🪙 Economy"):
     async def set(self, context: Context, user: discord.Member, amount: int) -> None:
         c = db["users"]
 
-        target_user_data = await CachedDB.find_one(c, {"id": user.id, "guild_id": context.guild.id})
+        target_user_data = await CachedDB.find_one(
+            c, {"id": user.id, "guild_id": context.guild.id}
+        )
 
         if not target_user_data:
             target_user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
 
             c.insert_one(target_user_data)
 
-        newdata = {
-            "$set": {"wallet": amount}
-        }
+        newdata = {"$set": {"wallet": amount}}
 
-        await CachedDB.update_one(c, {"id": user.id, "guild_id": context.guild.id}, newdata)
+        await CachedDB.update_one(
+            c, {"id": user.id, "guild_id": context.guild.id}, newdata
+        )
 
         await context.send(f"Set {user.mention}'s wallet to {amount}$")
 
     @commands.hybrid_command(
-        name="gamble",
-        description="Gamble your money",
-        usage="gamble <amount>"
+        name="gamble", description="Gamble your money", usage="gamble <amount>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -304,7 +311,9 @@ class Economy(commands.Cog, name="🪙 Economy"):
             return
 
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
@@ -325,7 +334,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
     @commands.hybrid_command(
         name="stockmarket",
         description="Gamble your money(but like irl but like fake fr)",
-        usage="stockmarket"
+        usage="stockmarket",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -335,31 +344,24 @@ class Economy(commands.Cog, name="🪙 Economy"):
     # TODO: MORE CACHING AFTER THIS POINT
 
     @commands.hybrid_command(
-        name="farm",
-        description="Farm some potatoes",
-        usage="farm"
+        name="farm", description="Farm some potatoes", usage="farm"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def farm(self, context: Context) -> None:
 
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": context.author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": context.author.id, "guild_id": context.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(context.author.id, context.guild.id)
             c.insert_one(data)
 
         if not "farm" in data:
-            data["farm"] = {
-                "saplings": 0,
-                "crops": 0,
-                "harvestable": 0,
-                "ready_in": 0
-            }
-            newdata = {
-                "$set": {"farm": data["farm"]}
-            }
+            data["farm"] = {"saplings": 0, "crops": 0, "harvestable": 0, "ready_in": 0}
+            newdata = {"$set": {"farm": data["farm"]}}
             c.update_one(
                 {"id": context.author.id, "guild_id": context.guild.id}, newdata
             )
@@ -373,7 +375,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
         embed = discord.Embed(
             title="Farm",
             description="Buy saplings to farm potatoes",
-            color=0x77dd77,
+            color=0x77DD77,
         )
 
         embed.add_field(
@@ -404,12 +406,9 @@ class Economy(commands.Cog, name="🪙 Economy"):
 
         await context.send(embed=embed, view=FarmButton(context.author.id))
 
-        new_data = {
-            "$set": {"farm": farmData}
-        }
-        c.update_one(
-            {"id": context.author.id, "guild_id": context.guild.id}, new_data
-        )
+        new_data = {"$set": {"farm": farmData}}
+        c.update_one({"id": context.author.id, "guild_id": context.guild.id}, new_data)
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Economy(bot))

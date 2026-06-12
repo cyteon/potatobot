@@ -14,7 +14,6 @@ The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 """
 
-
 import aiohttp
 import discord
 from discord import app_commands
@@ -41,14 +40,19 @@ class Github(commands.Cog, name="🖧 Github"):
     async def github(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}github {cmd.name} - {cmd.description}" for cmd in self.github.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}github {cmd.name} - {cmd.description}"
+                for cmd in self.github.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Github", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Github",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
@@ -56,15 +60,13 @@ class Github(commands.Cog, name="🖧 Github"):
     @github.command(
         name="user",
         description="Gets the Profile of the github person.",
-        usage="github user <username>"
+        usage="github user <username>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def ghuser(self, context, user: str):
         async with aiohttp.ClientSession() as session:
-            person_raw = await session.get(
-                f"https://api.github.com/users/{user}"
-            )
+            person_raw = await session.get(f"https://api.github.com/users/{user}")
             if person_raw.status != 200:
                 return await context.send("User not found!")
             else:
@@ -92,9 +94,7 @@ class Github(commands.Cog, name="🖧 Github"):
             embed.add_field(
                 name="Followers 👥: ", value=f"{person['followers']}", inline=True
             )
-            embed.add_field(
-                name="Website 🖥️: ", value=f"{person['blog']}", inline=True
-            )
+            embed.add_field(name="Website 🖥️: ", value=f"{person['blog']}", inline=True)
 
             await context.send(embed=embed, view=ProfileButton(url=person["html_url"]))
 
@@ -102,7 +102,7 @@ class Github(commands.Cog, name="🖧 Github"):
     @github.command(
         name="repo",
         description="Searches for the specified repo.",
-        usage="github repo <repo>"
+        usage="github repo <repo>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -160,17 +160,28 @@ class Github(commands.Cog, name="🖧 Github"):
 
             await context.send(embed=embed, view=RepoButton(url=repo["html_url"]))
 
+
 class ProfileButton(discord.ui.View):
     def __init__(self, url: str):
         super().__init__()
 
-        self.add_item(discord.ui.Button(label="GitHub Profile", style=discord.ButtonStyle.url, url=url))
+        self.add_item(
+            discord.ui.Button(
+                label="GitHub Profile", style=discord.ButtonStyle.url, url=url
+            )
+        )
+
 
 class RepoButton(discord.ui.View):
     def __init__(self, url: str):
         super().__init__()
 
-        self.add_item(discord.ui.Button(label="GitHub Repository", style=discord.ButtonStyle.url, url=url))
+        self.add_item(
+            discord.ui.Button(
+                label="GitHub Repository", style=discord.ButtonStyle.url, url=url
+            )
+        )
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Github(bot))

@@ -1,27 +1,29 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import random
-import discord
-import os
-import aiohttp
-import json
-import requests
 import io
-from PIL import Image
-
+import json
+import os
+import random
 from io import BytesIO
-from discord.ui import Button, View
 
+import aiohttp
+import discord
+import requests
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.ui import Button, View
+from PIL import Image
 
 from utils import Checks
 
 TENOR_API_KEY = os.getenv("TENOR_API_KEY")
 
+
 class TicTacToeButton(Button):
-    def __init__(self, x: int, y: int, player_x: discord.Member, player_o: discord.Member):
+    def __init__(
+        self, x: int, y: int, player_x: discord.Member, player_o: discord.Member
+    ):
         super().__init__(style=discord.ButtonStyle.secondary, label="\u200b", row=y)
         self.x = x
         self.y = y
@@ -31,28 +33,45 @@ class TicTacToeButton(Button):
     async def callback(self, interaction: discord.Interaction):
         view: TicTacToeView = self.view
         if interaction.user != view.current_player:
-            await interaction.response.send_message("It's not your turn!", ephemeral=True)
+            await interaction.response.send_message(
+                "It's not your turn!", ephemeral=True
+            )
             return
 
         if self.label == "\u200b":
             self.label = "X" if view.current_player == self.player_x else "O"
-            self.style = discord.ButtonStyle.danger if view.current_player == self.player_x else discord.ButtonStyle.primary
+            self.style = (
+                discord.ButtonStyle.danger
+                if view.current_player == self.player_x
+                else discord.ButtonStyle.primary
+            )
             self.disabled = True
 
-            view.board[self.x][self.y] = 1 if view.current_player == self.player_x else -1
-            view.current_player = self.player_o if view.current_player == self.player_x else self.player_x
+            view.board[self.x][self.y] = (
+                1 if view.current_player == self.player_x else -1
+            )
+            view.current_player = (
+                self.player_o if view.current_player == self.player_x else self.player_x
+            )
 
-            await interaction.response.edit_message(content=f"{view.current_player.mention}, your turn.", view=view)
+            await interaction.response.edit_message(
+                content=f"{view.current_player.mention}, your turn.", view=view
+            )
 
             winner = view.check_winner()
             if winner:
-                await interaction.followup.send(f"{winner.mention} wins!", ephemeral=False)
+                await interaction.followup.send(
+                    f"{winner.mention} wins!", ephemeral=False
+                )
                 view.stop()
             elif all(cell != 0 for row in view.board for cell in row):
                 await interaction.followup.send("It's a tie!", ephemeral=False)
                 view.stop()
         else:
-            await interaction.response.send_message("This button is already clicked!", ephemeral=True)
+            await interaction.response.send_message(
+                "This button is already clicked!", ephemeral=True
+            )
+
 
 class TicTacToeView(View):
     def __init__(self, player_x: discord.Member, player_o: discord.Member):
@@ -91,6 +110,7 @@ class TicTacToeView(View):
 
         return None
 
+
 class Fun(commands.Cog, name="🎉 Fun"):
     def __init__(self, bot) -> None:
         self.bot = bot
@@ -108,7 +128,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @commands.hybrid_group(
         name="http",
         description="Commands for http cat/dog/fish images.",
-        usage="http <subcommand>"
+        usage="http <subcommand>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -117,21 +137,26 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def http(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}http {cmd.name} - {cmd.description}" for cmd in self.http.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}http {cmd.name} - {cmd.description}"
+                for cmd in self.http.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Http", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Http",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @http.command(
         name="cat",
         description="Get a cat image representing a http status code.",
-        usage="http cat <code>"
+        usage="http cat <code>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -141,7 +166,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @http.command(
         name="dog",
         description="Get a dog image representing a http status code.",
-        usage="http dog <code>"
+        usage="http dog <code>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -151,7 +176,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @http.command(
         name="fish",
         description="Get a fish image representing a http status code.",
-        usage="http fish <code>"
+        usage="http fish <code>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -161,16 +186,15 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @http.command(
         name="goat",
         description="Get a goat image representing a http status code.",
-        usage="http goat <code>"
+        usage="http goat <code>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def http_goat(self, context: Context, code) -> None:
         await context.send(f"https://httpgoats.com/{code}.jpg")
 
-    @commands.hybrid_command( # TODO: fix this crap
-        name="bored",
-        description="Get an activity if you are bored"
+    @commands.hybrid_command(  # TODO: fix this crap
+        name="bored", description="Get an activity if you are bored"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -178,7 +202,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def bored(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            url="https://bored-api.appbrewery.com/random"
+            url = "https://bored-api.appbrewery.com/random"
 
             async with session.get(url) as r:
                 if r.status == 200:
@@ -187,26 +211,33 @@ class Fun(commands.Cog, name="🎉 Fun"):
                     embed = discord.Embed()
 
                     if "error" in data:
-                        embed = discord.Embed(title=data["error"], color=discord.Color.brand_red())
+                        embed = discord.Embed(
+                            title=data["error"], color=discord.Color.brand_red()
+                        )
                     else:
-                        embed = discord.Embed(title=data["activity"], color=discord.Color.teal())
+                        embed = discord.Embed(
+                            title=data["activity"], color=discord.Color.teal()
+                        )
 
-                        embed.add_field(name = "Type", value = data["type"].capitalize())
-                        embed.add_field(name = "Participants", value = data["participants"])
-                        embed.add_field(name = "Price", value = data["price"])
+                        embed.add_field(name="Type", value=data["type"].capitalize())
+                        embed.add_field(name="Participants", value=data["participants"])
+                        embed.add_field(name="Price", value=data["price"])
 
                     await context.send(embed=embed)
                 elif r.status == 404:
-                    embed = discord.Embed(title="No activities found", color=discord.Color.brand_red())
+                    embed = discord.Embed(
+                        title="No activities found", color=discord.Color.brand_red()
+                    )
 
                     await context.send(embed=embed)
                 else:
-                    await context.send(f"BoredAPI is currently experiencing issues: Status " + str(r.status))
+                    await context.send(
+                        f"BoredAPI is currently experiencing issues: Status "
+                        + str(r.status)
+                    )
 
     @commands.hybrid_command(
-        name="advice",
-        description="Get some advice",
-        usage="advice"
+        name="advice", description="Get some advice", usage="advice"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -219,17 +250,16 @@ class Fun(commands.Cog, name="🎉 Fun"):
 
             await context.send(data["slip"]["advice"])
 
-    @commands.hybrid_command(
-        name="insult",
-        description="Get an insult"
-    )
+    @commands.hybrid_command(name="insult", description="Get an insult")
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def insult(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://evilinsult.com/generate_insult.php?lang=en&type=json") as r:
+            async with session.get(
+                f"https://evilinsult.com/generate_insult.php?lang=en&type=json"
+            ) as r:
                 if r.status == 200:
                     data = await r.json()
 
@@ -238,7 +268,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @commands.hybrid_command(
         name="gif",
         description="Get a random gif, unless query is specified",
-        usage="gif [optional: query]"
+        usage="gif [optional: query]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -264,21 +294,20 @@ class Fun(commands.Cog, name="🎉 Fun"):
                     "car",
                     "technology",
                     "random",
-                    "plane"
+                    "plane",
                 ]
             )
             rand = True
 
         async with aiohttp.ClientSession() as session:
             data = await session.get(
-                f"https://tenor.googleapis.com/v2/search?random={rand}&q={query}&key=" + TENOR_API_KEY
+                f"https://tenor.googleapis.com/v2/search?random={rand}&q={query}&key="
+                + TENOR_API_KEY
             )
 
             data = await data.json()
 
-            img = await session.get(
-                data["results"][0]["media_formats"]["gif"]["url"]
-            )
+            img = await session.get(data["results"][0]["media_formats"]["gif"]["url"])
 
             imageData = io.BytesIO(await img.read())
             await context.send(file=discord.File(imageData, "gif.gif"))
@@ -287,7 +316,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
         name="avatar",
         description="Commands for avatar manipulation",
         aliases=["av", "pfp"],
-        usage="avatar <subcommand>"
+        usage="avatar <subcommand>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -296,21 +325,26 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def avatar(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}avatar {cmd.name} - {cmd.description}" for cmd in self.avatar.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}avatar {cmd.name} - {cmd.description}"
+                for cmd in self.avatar.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Avatar", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Avatar",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @avatar.command(
         name="get",
         description="Get someone's avatar",
-        usage="avatar get [optional: user]"
+        usage="avatar get [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -319,8 +353,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
             user = context.author
 
         embed = discord.Embed(
-            title=f"{user.name}'s Avatar",
-            color=discord.Color.blurple()
+            title=f"{user.name}'s Avatar", color=discord.Color.blurple()
         )
 
         embed.set_image(url=user.display_avatar.url)
@@ -328,9 +361,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
         await context.send(embed=embed)
 
     @avatar.command(
-        name="blur",
-        description="Blur someone",
-        usage="avatar blur [optional: user]"
+        name="blur", description="Blur someone", usage="avatar blur [optional: user]"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -349,7 +380,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @avatar.command(
         name="pixelate",
         description="Pixelate someone",
-        usage="avatar pixelate [optional: user]"
+        usage="avatar pixelate [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -368,7 +399,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @avatar.command(
         name="trigger",
         description="Trigger someone",
-        usage="avatar trigger [optional: user]"
+        usage="avatar trigger [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -387,7 +418,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @avatar.command(
         name="jail",
         description="Put someone in jail",
-        usage="avatar jail [optional: user]"
+        usage="avatar jail [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -404,9 +435,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
             await context.send(file=discord.File(imageData, "jail.png"))
 
     @avatar.command(
-        name="wasted",
-        description="Wasted",
-        usage="avatar wasted [optional: user]"
+        name="wasted", description="Wasted", usage="avatar wasted [optional: user]"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -423,9 +452,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
             await context.send(file=discord.File(imageData, "wasted.png"))
 
     @avatar.command(
-        name="passed",
-        description="Passed",
-        usage="avatar passed [optional: user]"
+        name="passed", description="Passed", usage="avatar passed [optional: user]"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -444,7 +471,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @avatar.command(
         name="trans",
         description="Trans border around pfp",
-        usage="avatar trans [optional: user]"
+        usage="avatar trans [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -463,7 +490,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @commands.hybrid_group(
         name="random",
         description="Commands for random stuff",
-        usage="random <subcommand>"
+        usage="random <subcommand>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -472,21 +499,24 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}random {cmd.name} - {cmd.description}" for cmd in self.random.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}random {cmd.name} - {cmd.description}"
+                for cmd in self.random.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Random", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Random",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @random.command(
-        name="boykisser",
-        description="Get a random boykisser image",
-        usage="boykisser"
+        name="boykisser", description="Get a random boykisser image", usage="boykisser"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -494,18 +524,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def boykisser(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://api.gizzy.is-a.dev/api/random?redirect=0"
-            )
+            data = await session.get("https://api.gizzy.is-a.dev/api/random?redirect=0")
 
             data = await data.json()
 
-            await context.send(data['url'])
+            await context.send(data["url"])
 
     @random.command(
-        name="gayrate",
-        description="Get your gay rate",
-        usage="random gayrate <user>"
+        name="gayrate", description="Get your gay rate", usage="random gayrate <user>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -516,7 +542,20 @@ class Fun(commands.Cog, name="🎉 Fun"):
             user = context.author
 
         percentage = random.randint(0, 100)
-        emojis = ["😳", "😳", "😳", "😳", "😳", "😳", "😳", "😳", "😳", "😳", "🏳️‍🌈", "🔥"]
+        emojis = [
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "😳",
+            "🏳️‍🌈",
+            "🔥",
+        ]
 
         if percentage > 90:
             emoji = "🌈"
@@ -527,11 +566,8 @@ class Fun(commands.Cog, name="🎉 Fun"):
 
         await context.send(f"**{user}** is {percentage}% gay {emoji}")
 
-
     @random.command(
-        name="coffee",
-        description="Get a random coffee image",
-        usage="random coffee"
+        name="coffee", description="Get a random coffee image", usage="random coffee"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -539,18 +575,13 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def random_coffee(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-
-            img = await session.get(
-                "https://coffee.alexflipnote.dev/random"
-            )
+            img = await session.get("https://coffee.alexflipnote.dev/random")
 
             imageData = io.BytesIO(await img.read())
             await context.send(file=discord.File(imageData, "coffee.png"))
 
     @random.command(
-        name="cat",
-        description="Get a random cat image",
-        usage="random cat"
+        name="cat", description="Get a random cat image", usage="random cat"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -559,18 +590,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_cat(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/cat"
-            )
+            data = await session.get("https://some-random-api.com/animal/cat")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="dog",
-        description="Get a random dog image",
-        usage="random dog"
+        name="dog", description="Get a random dog image", usage="random dog"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -578,18 +605,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def random_dog(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/dog"
-            )
+            data = await session.get("https://some-random-api.com/animal/dog")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="bird",
-        description="Get a random bird image",
-        usage="random bird"
+        name="bird", description="Get a random bird image", usage="random bird"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -598,18 +621,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_bird(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/bird"
-            )
+            data = await session.get("https://some-random-api.com/animal/bird")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="fox",
-        description="Get a random fox image",
-        usage="random fox"
+        name="fox", description="Get a random fox image", usage="random fox"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -618,9 +637,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_fox(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/fox"
-            )
+            data = await session.get("https://some-random-api.com/animal/fox")
 
             data = await data.json()
 
@@ -629,7 +646,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @random.command(
         name="kangaroo",
         description="Get a random kangaroo image",
-        usage="random kangaroo"
+        usage="random kangaroo",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -637,18 +654,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def random_kangaroo(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/kangaroo"
-            )
+            data = await session.get("https://some-random-api.com/animal/kangaroo")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="koala",
-        description="Get a random koala image",
-        usage="random koala"
+        name="koala", description="Get a random koala image", usage="random koala"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -656,18 +669,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def random_koala(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/koala"
-            )
+            data = await session.get("https://some-random-api.com/animal/koala")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="panda",
-        description="Get a random panda image",
-        usage="random panda"
+        name="panda", description="Get a random panda image", usage="random panda"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -676,18 +685,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_panda(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/panda"
-            )
+            data = await session.get("https://some-random-api.com/animal/panda")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @random.command(
-        name="raccoon",
-        description="Get a random raccoon image",
-        usage="random raccoon"
+        name="raccoon", description="Get a random raccoon image", usage="random raccoon"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -696,9 +701,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_raccoon(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/raccoon"
-            )
+            data = await session.get("https://some-random-api.com/animal/raccoon")
 
             data = await data.json()
 
@@ -707,7 +710,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @random.command(
         name="red-panda",
         description="Get a random raccoon image",
-        usage="random red-panda"
+        usage="random red-panda",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -716,18 +719,14 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def random_red_panda(self, context: Context) -> None:
 
         async with aiohttp.ClientSession() as session:
-            data = await session.get(
-                "https://some-random-api.com/animal/red_panda"
-            )
+            data = await session.get("https://some-random-api.com/animal/red_panda")
 
             data = await data.json()
 
             await context.send(data["image"])
 
     @commands.hybrid_group(
-        name="img",
-        description="Commands for image creation",
-        usage="img <subcommand>"
+        name="img", description="Commands for image creation", usage="img <subcommand>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -736,21 +735,26 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def image(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}img {cmd.name} - {cmd.description}" for cmd in self.image.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}img {cmd.name} - {cmd.description}"
+                for cmd in self.image.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Image", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Image",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @image.command(
         name="youtube",
         description="Youtube comment",
-        usage="image youtube <user> <text>"
+        usage="image youtube <user> <text>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -766,16 +770,12 @@ class Fun(commands.Cog, name="🎉 Fun"):
             imageData = io.BytesIO(await img.read())
             await context.send(file=discord.File(imageData, "youtube.png"))
 
-    @image.command(
-        name="tweet",
-        description="Tweet",
-        usage="image tweet <user> <text>"
-    )
+    @image.command(name="tweet", description="Tweet", usage="image tweet <user> <text>")
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def tweet(self, context: Context, user: discord.User, *, tweet: str) -> None:
         async with aiohttp.ClientSession() as session:
-            nick = user.nick if hasattr(user, 'nick') else user.display_name
+            nick = user.nick if hasattr(user, "nick") else user.display_name
             if nick == None:
                 nick = user.display_name
 
@@ -790,7 +790,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
         name="ttt",
         aliases=["tictactoe"],
         description="Play a game of Tic-Tac-Toe",
-        usage="ttt <opponent>"
+        usage="ttt <opponent>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -807,45 +807,55 @@ class Fun(commands.Cog, name="🎉 Fun"):
             await context.send("You cannot play against bots!")
             return
 
-        await context.send(f"{context.author.mention} vs {opponent.mention}!", view=TicTacToeView(context.author, opponent))
+        await context.send(
+            f"{context.author.mention} vs {opponent.mention}!",
+            view=TicTacToeView(context.author, opponent),
+        )
 
     @commands.hybrid_command(
         name="togif",
         description="Convert an uploaded image (PNG/JPG) into a GIF",
-        usage="togif [upload image]"
+        usage="togif [upload image]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def togif(self, context: Context, attachment: discord.Attachment) -> None:
-        if not attachment.content_type or not attachment.content_type.startswith("image"):
+        if not attachment.content_type or not attachment.content_type.startswith(
+            "image"
+        ):
             await context.send("Please upload a valid image file!")
             return
 
         if attachment.size > 20 * 1024 * 1024:
-            await context.send("The image is too large! Please upload a file smaller than 20MB.")
+            await context.send(
+                "The image is too large! Please upload a file smaller than 20MB."
+            )
             return
 
         async with context.typing():
             image_bytes = await attachment.read()
             img_input = io.BytesIO(image_bytes)
-            
+
             try:
                 with Image.open(img_input) as img:
                     if img.mode in ("RGBA", "P"):
                         img = img.convert("RGB")
-                    
+
                     output_buffer = io.BytesIO()
                     img.save(output_buffer, format="GIF")
                     output_buffer.seek(0)
-                    
+
                     await context.send(
                         file=discord.File(fp=output_buffer, filename="converted.gif")
                     )
             except Exception as e:
                 self.bot.logger.error(f"Error in togif command: {e}")
-                await context.send("Failed to convert image to GIF. Ensure the file is a valid image.")
+                await context.send(
+                    "Failed to convert image to GIF. Ensure the file is a valid image."
+                )
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Fun(bot))

@@ -1,17 +1,17 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
 import random
-import pymongo
 
 import discord
+import pymongo
 from discord.ext import commands
 from discord.ext.commands import Context
-
 from easy_pil import *
 
-from utils import CONSTANTS, DBClient, Checks, CachedDB
+from utils import CONSTANTS, CachedDB, Checks, DBClient
 
 db = DBClient.db
+
 
 class Level(commands.Cog, name="🚀 Level"):
     def __init__(self, bot) -> None:
@@ -20,7 +20,7 @@ class Level(commands.Cog, name="🚀 Level"):
     @commands.hybrid_command(
         name="level",
         description="See yours or someone elses current level and xp",
-        usage="level [optional: user]"
+        usage="level [optional: user]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -49,12 +49,26 @@ class Level(commands.Cog, name="🚀 Level"):
             background.polygon(card_right_shape, color="#FFFFFF")
             background.paste(profile, (30, 30))
 
-            background.rectangle((30, 220), width=650, height=40, color="#FFFFFF", radius=20)
-            background.bar((30, 220), max_width=650, height=40, percentage=percentage, color="orange", radius=20)
+            background.rectangle(
+                (30, 220), width=650, height=40, color="#FFFFFF", radius=20
+            )
+            background.bar(
+                (30, 220),
+                max_width=650,
+                height=40,
+                percentage=percentage,
+                color="orange",
+                radius=20,
+            )
             background.text((200, 40), user.name, font=poppins, color="#FFFFFF")
 
             background.rectangle((200, 100), width=350, height=2, fill="#FFFFFF")
-            background.text((200, 130), f"Level {data['level']} - {data['xp']}/{xp_for_next_level} XP", font=poppins_small, color="#FFFFFF")
+            background.text(
+                (200, 130),
+                f"Level {data['level']} - {data['xp']}/{xp_for_next_level} XP",
+                font=poppins_small,
+                color="#FFFFFF",
+            )
 
             file = discord.File(fp=background.image_bytes, filename="level_card.png")
             await context.send(file=file)
@@ -66,19 +80,21 @@ class Level(commands.Cog, name="🚀 Level"):
         name="leaderboard",
         description="See the top 10 users with the most xp in this server",
         aliases=["lb"],
-        usage="leaderboard"
+        usage="leaderboard",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(self, context: Context) -> None:
         c = db["users"]
-        data = c.find({"guild_id": context.guild.id}).sort([("level", pymongo.DESCENDING), ("xp", pymongo.DESCENDING)]).limit(10)
+        data = (
+            c.find({"guild_id": context.guild.id})
+            .sort([("level", pymongo.DESCENDING), ("xp", pymongo.DESCENDING)])
+            .limit(10)
+        )
 
         embed = discord.Embed(
-            title="Leaderboard",
-            description="",
-            color=discord.Color.gold()
+            title="Leaderboard", description="", color=discord.Color.gold()
         )
 
         for index, user in enumerate(data, start=1):
@@ -89,7 +105,7 @@ class Level(commands.Cog, name="🚀 Level"):
                     embed.add_field(
                         name=f"{index}. {member.nick if member.nick else member.display_name if member.display_name else member.name}",
                         value=f"Level: {user['level']} - XP: {user['xp']}",
-                        inline=False
+                        inline=False,
                     )
             else:
                 fetched = await self.bot.fetch_user(user["id"])
@@ -98,14 +114,14 @@ class Level(commands.Cog, name="🚀 Level"):
                     embed.add_field(
                         name=f"{index}. Unknown User",
                         value=f"Level: {user['level']} - XP: {user['xp']}",
-                        inline=False
+                        inline=False,
                     )
 
                 if not fetched.bot:
                     embed.add_field(
                         name=f"{index}. {fetched.name}",
                         value=f"Level: {user['level']} - XP: {user['xp']}",
-                        inline=False
+                        inline=False,
                     )
 
         await context.send(embed=embed)
@@ -121,7 +137,9 @@ class Level(commands.Cog, name="🚀 Level"):
         author = message.author
 
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": author.id, "guild_id": message.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": author.id, "guild_id": message.guild.id}
+        )
 
         if not data:
             data = CONSTANTS.user_data_template(author.id, message.guild.id)
@@ -147,29 +165,39 @@ class Level(commands.Cog, name="🚀 Level"):
             data["xp"] = 0
 
             if str(data["level"]) in guild_data["level_roles"]:
-                role = message.guild.get_role(guild_data["level_roles"][str(data["level"])])
+                role = message.guild.get_role(
+                    guild_data["level_roles"][str(data["level"])]
+                )
                 await message.author.add_roles(role)
 
             channel = message.channel
             if guild_data:
                 if "level_announce_channel" in guild_data:
                     if guild_data["level_announce_channel"] != 0:
-                        channel = message.guild.get_channel(guild_data["level_announce_channel"])
+                        channel = message.guild.get_channel(
+                            guild_data["level_announce_channel"]
+                        )
 
                 if "should_announce_levelup" in guild_data:
                     if guild_data["should_announce_levelup"]:
-                        await channel.send(f"{author.mention} leveled up to level {data['level']}!")
+                        await channel.send(
+                            f"{author.mention} leveled up to level {data['level']}!"
+                        )
                 else:
-                    await channel.send(f"{author.mention} leveled up to level {data['level']}!")
+                    await channel.send(
+                        f"{author.mention} leveled up to level {data['level']}!"
+                    )
 
         newdata = {"$set": {"xp": data["xp"], "level": data["level"]}}
 
-        await CachedDB.update_one(c, {"id": author.id, "guild_id": message.guild.id}, newdata)
+        await CachedDB.update_one(
+            c, {"id": author.id, "guild_id": message.guild.id}, newdata
+        )
 
     @commands.hybrid_command(
         name="create-level-roles",
         description="Create roles for levels (manage_roles permission)",
-        usage="create-level-roles"
+        usage="create-level-roles",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -197,7 +225,7 @@ class Level(commands.Cog, name="🚀 Level"):
     @commands.hybrid_command(
         name="delete-level-roles",
         description="Delete roles for levels",
-        usage="delete-level-roles"
+        usage="delete-level-roles",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -222,6 +250,7 @@ class Level(commands.Cog, name="🚀 Level"):
 
         await CachedDB.update_one(guilds, {"id": context.guild.id}, newdata)
         await context.send("Roles deleted!")
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Level(bot))

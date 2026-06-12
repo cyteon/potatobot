@@ -1,11 +1,12 @@
-import discord
 import asyncio
-import aiohttp
 import json
 import os
 from datetime import datetime
+
+import aiohttp
+import discord
 from discord import ui
-from discord.ui import Button, button, View
+from discord.ui import Button, View, button
 
 from utils import DBClient
 
@@ -13,7 +14,7 @@ db = DBClient.db
 
 # Configuration Constants
 # TODO: put this in a config file
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 MIN_TRADE_AMOUNT = 1
 MAX_TRADE_AMOUNT = 100000
 TRADE_COOLDOWN = 5
@@ -26,8 +27,9 @@ MOCK_PRICES = {
     "TSLA": 240.45,
     "META": 485.60,
     "NVDA": 820.30,
-    "AMD": 175.25
+    "AMD": 175.25,
 }
+
 
 class StockPortfolioView(View):
     def __init__(self, authorid):
@@ -35,10 +37,19 @@ class StockPortfolioView(View):
         self.authorid = authorid
         self.last_trade_time = {}
 
-    @button(label="Buy Stocks", style=discord.ButtonStyle.primary, custom_id="buy_stocks", emoji="📈")
-    async def buy_stocks(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="Buy Stocks",
+        style=discord.ButtonStyle.primary,
+        custom_id="buy_stocks",
+        emoji="📈",
+    )
+    async def buy_stocks(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
-            return await interaction.response.send_message("This isn't your trading session!", ephemeral=True)
+            return await interaction.response.send_message(
+                "This isn't your trading session!", ephemeral=True
+            )
 
         current_time = datetime.now().timestamp()
         if self.authorid in self.last_trade_time:
@@ -46,16 +57,25 @@ class StockPortfolioView(View):
             if time_diff < TRADE_COOLDOWN:
                 return await interaction.response.send_message(
                     f"Please wait {TRADE_COOLDOWN - int(time_diff)} seconds before trading again!",
-                    ephemeral=True
+                    ephemeral=True,
                 )
 
         self.last_trade_time[self.authorid] = current_time
         await interaction.response.send_modal(BuyStocksModal(self.authorid))
 
-    @button(label="Sell Stocks", style=discord.ButtonStyle.danger, custom_id="sell_stocks", emoji="📉")
-    async def sell_stocks(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="Sell Stocks",
+        style=discord.ButtonStyle.danger,
+        custom_id="sell_stocks",
+        emoji="📉",
+    )
+    async def sell_stocks(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
-            return await interaction.response.send_message("This isn't your trading session!", ephemeral=True)
+            return await interaction.response.send_message(
+                "This isn't your trading session!", ephemeral=True
+            )
 
         current_time = datetime.now().timestamp()
         if self.authorid in self.last_trade_time:
@@ -63,28 +83,45 @@ class StockPortfolioView(View):
             if time_diff < TRADE_COOLDOWN:
                 return await interaction.response.send_message(
                     f"Please wait {TRADE_COOLDOWN - int(time_diff)} seconds before trading again!",
-                    ephemeral=True
+                    ephemeral=True,
                 )
 
         self.last_trade_time[self.authorid] = current_time
         await interaction.response.send_modal(SellStocksModal(self.authorid))
 
-    @button(label="View Portfolio", style=discord.ButtonStyle.secondary, custom_id="view_portfolio", emoji="📊")
-    async def view_portfolio(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="View Portfolio",
+        style=discord.ButtonStyle.secondary,
+        custom_id="view_portfolio",
+        emoji="📊",
+    )
+    async def view_portfolio(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
-            return await interaction.response.send_message("This isn't your trading session!", ephemeral=True)
+            return await interaction.response.send_message(
+                "This isn't your trading session!", ephemeral=True
+            )
 
         c = db["trading"]
-        portfolio = c.find_one({"user_id": interaction.user.id, "guild_id": interaction.guild.id})
+        portfolio = c.find_one(
+            {"user_id": interaction.user.id, "guild_id": interaction.guild.id}
+        )
 
         if not portfolio or not portfolio.get("positions", {}):
-            return await interaction.response.send_message("You don't have any positions yet!", ephemeral=True)
+            return await interaction.response.send_message(
+                "You don't have any positions yet!", ephemeral=True
+            )
 
         c_users = db["users"]
-        user = c_users.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
+        user = c_users.find_one(
+            {"id": interaction.user.id, "guild_id": interaction.guild.id}
+        )
 
-        embed = discord.Embed(title="Your Portfolio", color=0x00ff00)
-        embed.add_field(name="Available Balance", value=f"${user['wallet']:,.2f}", inline=False)
+        embed = discord.Embed(title="Your Portfolio", color=0x00FF00)
+        embed.add_field(
+            name="Available Balance", value=f"${user['wallet']:,.2f}", inline=False
+        )
 
         total_value = 0
 
@@ -93,32 +130,45 @@ class StockPortfolioView(View):
             if price:
                 current_value = position["shares"] * price
                 total_value += current_value
-                profit_loss = current_value - (position["shares"] * position["average_price"])
+                profit_loss = current_value - (
+                    position["shares"] * position["average_price"]
+                )
 
                 embed.add_field(
                     name=f"{symbol}",
                     value=f"Shares: {position['shares']}\n"
-                          f"Avg Price: ${position['average_price']:.2f}\n"
-                          f"Current Price: ${price:.2f}\n"
-                          f"P/L: ${profit_loss:.2f} ({(profit_loss/current_value)*100:.1f}%)",
-                    inline=False
+                    f"Avg Price: ${position['average_price']:.2f}\n"
+                    f"Current Price: ${price:.2f}\n"
+                    f"P/L: ${profit_loss:.2f} ({(profit_loss / current_value) * 100:.1f}%)",
+                    inline=False,
                 )
 
-        embed.add_field(name="Total Portfolio Value", value=f"${total_value:.2f}", inline=False)
-        embed.add_field(name="Total Account Value", value=f"${(total_value + user['wallet']):.2f}", inline=False)
+        embed.add_field(
+            name="Total Portfolio Value", value=f"${total_value:.2f}", inline=False
+        )
+        embed.add_field(
+            name="Total Account Value",
+            value=f"${(total_value + user['wallet']):.2f}",
+            inline=False,
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 class BuyStocksModal(ui.Modal, title="Buy Stocks"):
     def __init__(self, authorid):
         super().__init__()
         self.authorid = authorid
 
-    symbol = ui.TextInput(label="Stock Symbol", placeholder="e.g. AAPL", min_length=1, max_length=5)
+    symbol = ui.TextInput(
+        label="Stock Symbol", placeholder="e.g. AAPL", min_length=1, max_length=5
+    )
     shares = ui.TextInput(label="Number of Shares", placeholder="e.g. 10")
 
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user.id != self.authorid:
-            return await interaction.response.send_message("This isn't your trading session!", ephemeral=True)
+            return await interaction.response.send_message(
+                "This isn't your trading session!", ephemeral=True
+            )
 
         symbol = self.symbol.value.upper()
         try:
@@ -126,14 +176,18 @@ class BuyStocksModal(ui.Modal, title="Buy Stocks"):
             if not MIN_TRADE_AMOUNT <= shares <= MAX_TRADE_AMOUNT:
                 return await interaction.response.send_message(
                     f"Please enter between {MIN_TRADE_AMOUNT} and {MAX_TRADE_AMOUNT} shares!",
-                    ephemeral=True
+                    ephemeral=True,
                 )
         except ValueError:
-            return await interaction.response.send_message("Please enter a valid number of shares!", ephemeral=True)
+            return await interaction.response.send_message(
+                "Please enter a valid number of shares!", ephemeral=True
+            )
 
         price = await get_stock_price(symbol)
         if not price:
-            return await interaction.response.send_message("Invalid stock symbol or API error!", ephemeral=True)
+            return await interaction.response.send_message(
+                "Invalid stock symbol or API error!", ephemeral=True
+            )
 
         total_cost = price * shares
 
@@ -142,64 +196,71 @@ class BuyStocksModal(ui.Modal, title="Buy Stocks"):
         if not user or user["wallet"] < total_cost:
             return await interaction.response.send_message(
                 f"Insufficient funds! You need ${total_cost:,.2f} but have ${user['wallet']:,.2f}",
-                ephemeral=True
+                ephemeral=True,
             )
 
         c = db["trading"]
-        portfolio = c.find_one({"user_id": interaction.user.id, "guild_id": interaction.guild.id})
+        portfolio = c.find_one(
+            {"user_id": interaction.user.id, "guild_id": interaction.guild.id}
+        )
 
         if not portfolio:
             portfolio = {
                 "user_id": interaction.user.id,
                 "guild_id": interaction.guild.id,
-                "positions": {}
+                "positions": {},
             }
             c.insert_one(portfolio)
 
         if symbol in portfolio["positions"]:
             current_position = portfolio["positions"][symbol]
             new_shares = current_position["shares"] + shares
-            new_average_price = ((current_position["shares"] * current_position["average_price"]) + total_cost) / new_shares
+            new_average_price = (
+                (current_position["shares"] * current_position["average_price"])
+                + total_cost
+            ) / new_shares
             portfolio["positions"][symbol] = {
                 "shares": new_shares,
-                "average_price": new_average_price
+                "average_price": new_average_price,
             }
         else:
-            portfolio["positions"][symbol] = {
-                "shares": shares,
-                "average_price": price
-            }
+            portfolio["positions"][symbol] = {"shares": shares, "average_price": price}
 
         c.update_one(
             {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$set": {"positions": portfolio["positions"]}}
+            {"$set": {"positions": portfolio["positions"]}},
         )
 
         user["wallet"] -= total_cost
         c = db["users"]
         c.update_one(
             {"id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$set": {"wallet": user["wallet"]}}
+            {"$set": {"wallet": user["wallet"]}},
         )
 
         await interaction.response.send_message(
             f"Successfully bought {shares} shares of {symbol} at ${price:.2f} per share.\n"
             f"Total cost: ${total_cost:.2f}\n"
             f"Remaining balance: ${user['wallet']:,.2f}",
-            ephemeral=True
+            ephemeral=True,
         )
+
 
 class SellStocksModal(ui.Modal, title="Sell Stocks"):
     def __init__(self, authorid):
         super().__init__()
         self.authorid = authorid
 
-    symbol = ui.TextInput(label="Stock Symbol", placeholder="e.g. AAPL", min_length=1, max_length=5)
+    symbol = ui.TextInput(
+        label="Stock Symbol", placeholder="e.g. AAPL", min_length=1, max_length=5
+    )
     shares = ui.TextInput(label="Number of Shares", placeholder="e.g. 10")
 
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user.id != self.authorid:
-            return await interaction.response.send_message("This isn't your trading session!", ephemeral=True)
+            return await interaction.response.send_message(
+                "This isn't your trading session!", ephemeral=True
+            )
 
         symbol = self.symbol.value.upper()
         try:
@@ -207,24 +268,32 @@ class SellStocksModal(ui.Modal, title="Sell Stocks"):
             if shares <= 0:
                 raise ValueError("Shares must be positive")
         except ValueError:
-            return await interaction.response.send_message("Please enter a valid number of shares!", ephemeral=True)
+            return await interaction.response.send_message(
+                "Please enter a valid number of shares!", ephemeral=True
+            )
 
         c = db["trading"]
-        portfolio = c.find_one({"user_id": interaction.user.id, "guild_id": interaction.guild.id})
+        portfolio = c.find_one(
+            {"user_id": interaction.user.id, "guild_id": interaction.guild.id}
+        )
 
         if not portfolio or symbol not in portfolio["positions"]:
-            return await interaction.response.send_message("You don't own this stock!", ephemeral=True)
+            return await interaction.response.send_message(
+                "You don't own this stock!", ephemeral=True
+            )
 
         current_position = portfolio["positions"][symbol]
         if current_position["shares"] < shares:
             return await interaction.response.send_message(
                 f"You don't have enough shares! You own {current_position['shares']} shares.",
-                ephemeral=True
+                ephemeral=True,
             )
 
         price = await get_stock_price(symbol)
         if not price:
-            return await interaction.response.send_message("Invalid stock symbol or API error!", ephemeral=True)
+            return await interaction.response.send_message(
+                "Invalid stock symbol or API error!", ephemeral=True
+            )
 
         total_value = price * shares
 
@@ -236,7 +305,7 @@ class SellStocksModal(ui.Modal, title="Sell Stocks"):
 
         c.update_one(
             {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$set": {"positions": portfolio["positions"]}}
+            {"$set": {"positions": portfolio["positions"]}},
         )
 
         c = db["users"]
@@ -244,7 +313,7 @@ class SellStocksModal(ui.Modal, title="Sell Stocks"):
         user["wallet"] += total_value
         c.update_one(
             {"id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$set": {"wallet": user["wallet"]}}
+            {"$set": {"wallet": user["wallet"]}},
         )
 
         profit_loss = (price - current_position["average_price"]) * shares
@@ -254,8 +323,9 @@ class SellStocksModal(ui.Modal, title="Sell Stocks"):
             f"Total value: ${total_value:.2f}\n"
             f"Profit/Loss: ${profit_loss:.2f}\n"
             f"New balance: ${user['wallet']:,.2f}",
-            ephemeral=True
+            ephemeral=True,
         )
+
 
 async def get_stock_price(symbol):
     """Get current stock price using Alpha Vantage API or mock data"""
@@ -274,6 +344,7 @@ async def get_stock_price(symbol):
         except:
             return None
 
+
 async def start_paper_trading(ctx):
     """
     Command to start paper trading session
@@ -288,19 +359,19 @@ async def start_paper_trading(ctx):
     embed = discord.Embed(
         title="Paper Trading",
         description="Welcome to paper trading! Trade stocks with your existing balance.\n"
-                   "Use the buttons below to buy/sell stocks and view your portfolio.",
-        color=0x00ff00
+        "Use the buttons below to buy/sell stocks and view your portfolio.",
+        color=0x00FF00,
     )
     embed.add_field(
-        name="Available Balance",
-        value=f"${user['wallet']:,.2f}",
-        inline=False
+        name="Available Balance", value=f"${user['wallet']:,.2f}", inline=False
     )
     if DEMO_MODE:
         embed.add_field(
             name="Available Demo Stocks",
-            value="\n".join([f"{symbol}: ${price:.2f}" for symbol, price in MOCK_PRICES.items()]),
-            inline=False
+            value="\n".join(
+                [f"{symbol}: ${price:.2f}" for symbol, price in MOCK_PRICES.items()]
+            ),
+            inline=False,
         )
 
     view = StockPortfolioView(ctx.author.id)

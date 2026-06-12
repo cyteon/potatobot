@@ -1,13 +1,13 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import discord
 import aiohttp
-
+import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from utils import Checks
+
 
 class Api(commands.Cog, name="🌐 API"):
     def __init__(self, bot) -> None:
@@ -25,14 +25,19 @@ class Api(commands.Cog, name="🌐 API"):
     async def api(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}api {cmd.name} - {cmd.description}" for cmd in self.api.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}api {cmd.name} - {cmd.description}"
+                for cmd in self.api.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Api", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Api",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
@@ -40,12 +45,14 @@ class Api(commands.Cog, name="🌐 API"):
         name="minecraft",
         aliases=["mc"],
         description="Get someones minecraft character",
-        usage="api minecraft <username>"
+        usage="api minecraft <username>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def api_minecraft(self, context: Context, *, username: str) -> None:
-        embed = discord.Embed(title=f"Minecraft character for {username}", color=0xBEBEFE)
+        embed = discord.Embed(
+            title=f"Minecraft character for {username}", color=0xBEBEFE
+        )
         embed.set_image(url=f"https://mc-heads.net/body/{username}")
 
         await context.send(embed=embed)
@@ -54,7 +61,7 @@ class Api(commands.Cog, name="🌐 API"):
         name="mc-server",
         aliases=["mcserver", "mc-srv", "mcs"],
         description="Get info on a minecraft server",
-        usage="api mc-server <username>"
+        usage="api mc-server <username>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -68,29 +75,38 @@ class Api(commands.Cog, name="🌐 API"):
                         title=f"Server info for {host}", color=0xBEBEFE
                     )
                     embed.add_field(
-                        name="Players", value=f"```{data['players']['online']}/{data['players']['max']}```", inline=False
+                        name="Players",
+                        value=f"```{data['players']['online']}/{data['players']['max']}```",
+                        inline=False,
                     )
 
                     if "software" in data:
                         embed.add_field(
-                            name="Version", value=f"```{data['version']} ({data['software']})```", inline=False
+                            name="Version",
+                            value=f"```{data['version']} ({data['software']})```",
+                            inline=False,
                         )
                     else:
                         embed.add_field(
-                            name="Version", value=f"```{data['version']}```", inline=False
+                            name="Version",
+                            value=f"```{data['version']}```",
+                            inline=False,
                         )
 
                     embed.add_field(
-                        name="MOTD", value=f"```{data['motd']['clean'][0]}```", inline=False
+                        name="MOTD",
+                        value=f"```{data['motd']['clean'][0]}```",
+                        inline=False,
                     )
 
                     if "list" in data["players"]:
                         players = [p["name"] for p in data["players"]["list"]]
                         players = ", ".join(players)
 
-
                         embed.add_field(
-                            name="Online players", value=f"```{players}```", inline=False
+                            name="Online players",
+                            value=f"```{players}```",
+                            inline=False,
                         )
 
                     if "plugins" in data:
@@ -112,6 +128,7 @@ class Api(commands.Cog, name="🌐 API"):
                     await context.send(embed=embed)
                 else:
                     await context.send("The server is offline")
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Api(bot))

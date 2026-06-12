@@ -1,19 +1,19 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import re
-import os
 import logging
+import os
+import re
 
 import discord
 import lavalink
 from discord.ext import commands
 from discord.ext.commands import Context
-from lavalink.events import TrackStartEvent, QueueEndEvent
 from lavalink.errors import ClientError
+from lavalink.events import QueueEndEvent, TrackStartEvent
 from lavalink.filters import LowPass, Timescale
 from lavalink.server import LoadType
 
-url_rx = re.compile(r'https?://(?:www\.)?.+')
+url_rx = re.compile(r"https?://(?:www\.)?.+")
 
 from utils import Checks
 
@@ -26,6 +26,7 @@ password = os.getenv("LAVALINK_PASSWORD")
 region = os.getenv("LAVALINK_REGION")
 name = os.getenv("LAVALINK_NAME")
 
+
 class LavalinkVoiceClient(discord.VoiceProtocol):
     def __init__(self, client: discord.Client, channel: discord.abc.Connectable):
         self.client = client
@@ -33,22 +34,20 @@ class LavalinkVoiceClient(discord.VoiceProtocol):
         self.guild_id = channel.guild.id
         self._destroyed = False
 
-        if not hasattr(self.client, 'lavalink'):
+        if not hasattr(self.client, "lavalink"):
             self.client.lavalink = lavalink.Client(client.user.id)
-            self.client.lavalink.add_node(host=host, port=port, password=password,
-                                          region=region, name=name)
+            self.client.lavalink.add_node(
+                host=host, port=port, password=password, region=region, name=name
+            )
 
         self.lavalink = self.client.lavalink
 
     async def on_voice_server_update(self, data):
-        lavalink_data = {
-            't': 'VOICE_SERVER_UPDATE',
-            'd': data
-        }
+        lavalink_data = {"t": "VOICE_SERVER_UPDATE", "d": data}
         await self.lavalink.voice_update_handler(lavalink_data)
 
     async def on_voice_state_update(self, data):
-        channel_id = data['channel_id']
+        channel_id = data["channel_id"]
 
         if not channel_id:
             await self._destroy()
@@ -56,16 +55,22 @@ class LavalinkVoiceClient(discord.VoiceProtocol):
 
         self.channel = self.client.get_channel(int(channel_id))
 
-        lavalink_data = {
-            't': 'VOICE_STATE_UPDATE',
-            'd': data
-        }
+        lavalink_data = {"t": "VOICE_STATE_UPDATE", "d": data}
 
         await self.lavalink.voice_update_handler(lavalink_data)
 
-    async def connect(self, *, timeout: float, reconnect: bool, self_deaf: bool = False, self_mute: bool = False) -> None:
+    async def connect(
+        self,
+        *,
+        timeout: float,
+        reconnect: bool,
+        self_deaf: bool = False,
+        self_mute: bool = False,
+    ) -> None:
         self.lavalink.player_manager.create(guild_id=self.channel.guild.id)
-        await self.channel.guild.change_voice_state(channel=self.channel, self_mute=self_mute, self_deaf=self_deaf)
+        await self.channel.guild.change_voice_state(
+            channel=self.channel, self_mute=self_mute, self_deaf=self_deaf
+        )
 
     async def disconnect(self, *, force: bool = False) -> None:
         player = self.lavalink.player_manager.get(self.channel.guild.id)
@@ -95,10 +100,11 @@ class Music(commands.Cog, name="🎵 Music"):
     def __init__(self, bot):
         self.bot = bot
 
-        if not hasattr(bot, 'lavalink'):
+        if not hasattr(bot, "lavalink"):
             bot.lavalink = lavalink.Client(bot.user.id)
-            bot.lavalink.add_node(host=host, port=port, password=password,
-                                  region=region, name=name)
+            bot.lavalink.add_node(
+                host=host, port=port, password=password, region=region, name=name
+            )
 
         self.lavalink: lavalink.Client = bot.lavalink
         self.lavalink.add_event_hooks(self)
@@ -116,15 +122,17 @@ class Music(commands.Cog, name="🎵 Music"):
 
         player = context.bot.lavalink.player_manager.create(context.guild.id)
 
-        should_connect = context.command.name in ('play',)
+        should_connect = context.command.name in ("play",)
 
         voice_client = context.voice_client
 
         if not context.author.voice or not context.author.voice.channel:
             if voice_client is not None:
-                raise commands.CommandInvokeError('You need to join my voice channel first.')
+                raise commands.CommandInvokeError(
+                    "You need to join my voice channel first."
+                )
 
-            raise commands.CommandInvokeError('Join a voicechannel first.')
+            raise commands.CommandInvokeError("Join a voicechannel first.")
 
         voice_channel = context.author.voice.channel
 
@@ -135,23 +143,28 @@ class Music(commands.Cog, name="🎵 Music"):
             permissions = voice_channel.permissions_for(context.me)
 
             if not permissions.connect or not permissions.speak:
-                raise commands.CommandInvokeError('I need the `CONNECT` and `SPEAK` permissions.')
+                raise commands.CommandInvokeError(
+                    "I need the `CONNECT` and `SPEAK` permissions."
+                )
 
             if voice_channel.user_limit > 0:
-                if len(voice_channel.members) >= voice_channel.user_limit and not context.me.guild_permissions.move_members:
-                    raise commands.CommandInvokeError('Your voice channel is full!')
+                if (
+                    len(voice_channel.members) >= voice_channel.user_limit
+                    and not context.me.guild_permissions.move_members
+                ):
+                    raise commands.CommandInvokeError("Your voice channel is full!")
 
-            player.store('channel', context.channel.id)
+            player.store("channel", context.channel.id)
             await context.author.voice.channel.connect(cls=LavalinkVoiceClient)
         elif voice_client.channel.id != voice_channel.id:
-            raise commands.CommandInvokeError('You need to be in my voicechannel.')
+            raise commands.CommandInvokeError("You need to be in my voicechannel.")
 
         return True
 
     @lavalink.listener(TrackStartEvent)
     async def on_track_start(self, event: TrackStartEvent):
         guild_id = event.player.guild_id
-        channel_id = event.player.fetch('channel')
+        channel_id = event.player.fetch("channel")
         guild = self.bot.get_guild(guild_id)
 
         if not guild:
@@ -160,10 +173,10 @@ class Music(commands.Cog, name="🎵 Music"):
         channel = guild.get_channel(channel_id)
 
         if channel:
-            await channel.send(f'Now playing: {event.track.title} by {event.track.author}')
+            await channel.send(
+                f"Now playing: {event.track.title} by {event.track.author}"
+            )
             logger.info(f"Now playing {event.track.title} in {guild} ({guild.id})")
-
-
 
     @lavalink.listener(QueueEndEvent)
     async def on_queue_end(self, event: QueueEndEvent):
@@ -176,18 +189,18 @@ class Music(commands.Cog, name="🎵 Music"):
     @commands.hybrid_command(
         name="play",
         description="Searches and plays a song from a given query.",
-        aliases=['p'],
-        usage="play <query or link>"
+        aliases=["p"],
+        usage="play <query or link>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @commands.check(create_player)
     async def play(self, context, *, query: str):
         player = self.bot.lavalink.player_manager.get(context.guild.id)
-        query = query.strip('<>')
+        query = query.strip("<>")
 
         if not url_rx.match(query):
-            query = f'ytsearch:{query}'
+            query = f"ytsearch:{query}"
 
         results = await player.node.get_tracks(query)
 
@@ -201,12 +214,12 @@ class Music(commands.Cog, name="🎵 Music"):
             for track in tracks:
                 player.add(track=track, requester=context.author.id)
 
-            embed.title = 'Playlist Enqueued!'
-            embed.description = f'{results.playlist_info.name} - {len(tracks)} tracks'
+            embed.title = "Playlist Enqueued!"
+            embed.description = f"{results.playlist_info.name} - {len(tracks)} tracks"
         else:
             track = results.tracks[0]
-            embed.title = 'Track Enqueued'
-            embed.description = f'[{track.title}]({track.uri})'
+            embed.title = "Track Enqueued"
+            embed.description = f"[{track.title}]({track.uri})"
 
             player.add(track=track, requester=context.author.id)
 
@@ -216,9 +229,7 @@ class Music(commands.Cog, name="🎵 Music"):
             await player.play()
 
     @commands.hybrid_command(
-        name="skip",
-        description="Skip to the next song in the queue",
-        usage="skip"
+        name="skip", description="Skip to the next song in the queue", usage="skip"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -227,9 +238,7 @@ class Music(commands.Cog, name="🎵 Music"):
         await self.bot.lavalink.player_manager.get(context.guild.id).skip()
 
     @commands.hybrid_command(
-        name="pause",
-        description="Pauses the currently playing track",
-        usage="pause"
+        name="pause", description="Pauses the currently playing track", usage="pause"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -239,12 +248,10 @@ class Music(commands.Cog, name="🎵 Music"):
 
         if player.is_playing:
             await player.set_pause(True)
-            await context.send('⏸ | Paused the player.')
+            await context.send("⏸ | Paused the player.")
 
     @commands.hybrid_command(
-        name="resume",
-        description="Resumes the currently paused track",
-        usage="resume"
+        name="resume", description="Resumes the currently paused track", usage="resume"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -254,13 +261,13 @@ class Music(commands.Cog, name="🎵 Music"):
 
         if player.paused:
             await player.set_pause(False)
-            await context.send('▶ | Resumed the player.')
+            await context.send("▶ | Resumed the player.")
 
     @commands.hybrid_command(
         name="loop",
         description="Enables/disables the loop on the current track",
-        aliases=['repeat'],
-        usage="loop"
+        aliases=["repeat"],
+        usage="loop",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -274,28 +281,33 @@ class Music(commands.Cog, name="🎵 Music"):
     @commands.hybrid_group(
         name="filter",
         description="Commands for managing filters.",
-        usage="filter <filter> <args>"
+        usage="filter <filter> <args>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def filter(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}filter {cmd.name} - {cmd.description}" for cmd in self.filter.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}filter {cmd.name} - {cmd.description}"
+                for cmd in self.filter.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Filter", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Filter",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @filter.command(
         name="lowpass",
         description="Sets the strength of the low pass filter",
-        usage="filer lowpass <strength>"
+        usage="filer lowpass <strength>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -307,13 +319,13 @@ class Music(commands.Cog, name="🎵 Music"):
         strength = min(1000, strength)
 
         if strength < 1 and strength != 0.0:
-            return await context.send('The strength must be greater than 1.')
+            return await context.send("The strength must be greater than 1.")
 
-        embed = discord.Embed(color=discord.Color.blurple(), title='Low Pass Filter')
+        embed = discord.Embed(color=discord.Color.blurple(), title="Low Pass Filter")
 
         if strength == 0.0:
-            await player.remove_filter('lowpass')
-            embed.description = 'Disabled **Low Pass Filter**'
+            await player.remove_filter("lowpass")
+            embed.description = "Disabled **Low Pass Filter**"
             return await context.send(embed=embed)
 
         low_pass = LowPass()
@@ -321,15 +333,14 @@ class Music(commands.Cog, name="🎵 Music"):
 
         await player.set_filter(low_pass)
 
-        embed.description = f'Set **Low Pass Filter** strength to {strength}.'
+        embed.description = f"Set **Low Pass Filter** strength to {strength}."
         await context.send(embed=embed)
-
 
     @filter.command(
         name="pitch",
         description="Sets the player pitch",
-        aliases=['ptch'],
-        usage="filter pitch <pitch>"
+        aliases=["ptch"],
+        usage="filter pitch <pitch>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -345,12 +356,11 @@ class Music(commands.Cog, name="🎵 Music"):
 
         await context.send(f"🎵 | Set the player pitch to {pitch}.")
 
-
     @filter.command(
         name="speed",
         description="Sets the player speed",
-        aliases=['spd'],
-        usage="filter speed <speed>"
+        aliases=["spd"],
+        usage="filter speed <speed>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -369,8 +379,8 @@ class Music(commands.Cog, name="🎵 Music"):
     @commands.hybrid_command(
         name="disconnect",
         description="Disconnects the player from the voice channel and clears the queue",
-        aliases=['dc', 'leave', 'stop'],
-        usage="disconnect"
+        aliases=["dc", "leave", "stop"],
+        usage="disconnect",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -381,13 +391,13 @@ class Music(commands.Cog, name="🎵 Music"):
         player.queue.clear()
         await player.stop()
         await context.voice_client.disconnect(force=True)
-        await context.send('✳ | Disconnected.')
+        await context.send("✳ | Disconnected.")
 
     @commands.hybrid_command(
         name="volume",
         description="Sets the player volume",
-        aliases=['vol'],
-        usage="volume <volume>"
+        aliases=["vol"],
+        usage="volume <volume>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)

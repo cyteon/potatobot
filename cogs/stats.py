@@ -1,26 +1,27 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import discord
 import os
-from discord.ext import commands
-from discord.ext.commands import Context
 from datetime import datetime
 
+import discord
+from discord.ext import commands
+from discord.ext.commands import Context
 from easy_pil import Font
-
-from PIL import Image, ImageDraw
 from pickledb import PickleDB
+from PIL import Image, ImageDraw
 
 from utils import Checks
 
-db = PickleDB('pickle/charts.db')
+db = PickleDB("pickle/charts.db")
+
 
 def textangle(draw, text, xy, angle, fill, font):
-    img = Image.new('RGBA', font.getsize(text))
+    img = Image.new("RGBA", font.getsize(text))
     d = ImageDraw.Draw(img)
     d.text((0, 0), text, font=font, fill=fill)
     w = img.rotate(angle, expand=1)
     draw.bitmap(xy, w, fill=fill)
+
 
 class Stats(commands.Cog, name="📈 Stats"):
     def __init__(self, bot) -> None:
@@ -60,9 +61,7 @@ class Stats(commands.Cog, name="📈 Stats"):
         db.save()
 
     @commands.hybrid_group(
-        name="chart",
-        description="Show chart of ... activity",
-        usage="chart"
+        name="chart", description="Show chart of ... activity", usage="chart"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -73,22 +72,24 @@ class Stats(commands.Cog, name="📈 Stats"):
 
         for subcommand in subcommands:
             description = subcommand.description.partition("\n")[0]
-            data.append(f"{await self.bot.get_prefix(context)}chart {subcommand.name} - {description}")
+            data.append(
+                f"{await self.bot.get_prefix(context)}chart {subcommand.name} - {description}"
+            )
 
         help_text = "\n".join(data)
         embed = discord.Embed(
-            title=f"Help: Chart", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Chart",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{help_text}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{help_text}```", inline=False)
 
         await context.send(embed=embed)
 
     @chart.command(
         name="messages",
         description="Show chart of message activity",
-        usage="chart messages"
+        usage="chart messages",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -99,12 +100,14 @@ class Stats(commands.Cog, name="📈 Stats"):
             return
 
         guild_data = db.get(guild_id)
-        dates = sorted([datetime.fromisoformat(date_str).date() for date_str in guild_data.keys()])
+        dates = sorted(
+            [datetime.fromisoformat(date_str).date() for date_str in guild_data.keys()]
+        )
         message_counts = [guild_data[str(date)]["messages"] for date in dates]
 
         total_messages = sum(message_counts)
 
-        img = Image.new('RGB', (1600, 800), color=(32, 34, 38))
+        img = Image.new("RGB", (1600, 800), color=(32, 34, 38))
         draw = ImageDraw.Draw(img)
         font = Font.poppins(size=20)
 
@@ -114,7 +117,7 @@ class Stats(commands.Cog, name="📈 Stats"):
         for y in range(100, 701, y_step):
             draw.line((100, y, 1500, y), fill=(64, 68, 75), width=2)
             number = (max_count - (y - 100) * max_count // 600) / 60 * 60
-            number = int(str(number).split('.')[0])
+            number = int(str(number).split(".")[0])
             draw.text((20, y - 10), str(number), font=font, fill=(255, 255, 255))
 
         bar_color = (128, 128, 128)
@@ -129,26 +132,35 @@ class Stats(commands.Cog, name="📈 Stats"):
                 draw.line((previous_point, (x, y)), fill=line_color, width=5)
             draw.ellipse((x - 5, y - 5, x + 5, y + 5), fill=line_color)
             previous_point = (x, y)
-            textangle(draw, dates[i].strftime('%d %b'), (x - 40, 720), 45, (255, 255, 255), font)
+            textangle(
+                draw,
+                dates[i].strftime("%d %b"),
+                (x - 40, 720),
+                45,
+                (255, 255, 255),
+                font,
+            )
 
-        label_text = f'Messages - Last 30 days'
-        total_text = f'Total Messages: {total_messages}'
+        label_text = f"Messages - Last 30 days"
+        total_text = f"Total Messages: {total_messages}"
         label_bbox = draw.textbbox((0, 0), label_text, font=font)
         label_width = label_bbox[2] - label_bbox[0]
         total_bbox = draw.textbbox((0, 0), total_text, font=font)
         total_width = total_bbox[2] - total_bbox[0]
         draw.text((20, 20), label_text, font=font, fill=(255, 255, 255))
-        draw.text((1600 - total_width - 20, 20), total_text, font=font, fill=(255, 255, 255))
+        draw.text(
+            (1600 - total_width - 20, 20), total_text, font=font, fill=(255, 255, 255)
+        )
 
-        img.save(f'graphs/graph-msgs-{context.channel.id}.png')
-        await context.send(file=discord.File(f'graphs/graph-msgs-{context.channel.id}.png'))
+        img.save(f"graphs/graph-msgs-{context.channel.id}.png")
+        await context.send(
+            file=discord.File(f"graphs/graph-msgs-{context.channel.id}.png")
+        )
 
-        os.remove(f'graphs/graph-msgs-{context.channel.id}.png')
+        os.remove(f"graphs/graph-msgs-{context.channel.id}.png")
 
     @chart.command(
-        name="members",
-        description="Show chart of member count",
-        usage="chart members"
+        name="members", description="Show chart of member count", usage="chart members"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -159,10 +171,19 @@ class Stats(commands.Cog, name="📈 Stats"):
             return
 
         guild_data = db.get(guild_id)
-        dates = sorted([datetime.fromisoformat(date_str).date() for date_str in guild_data.keys()])
-        user_counts = [((guild_data[str(date)]["users"]) if "users" in guild_data[str(date)] else 0) for date in dates]
+        dates = sorted(
+            [datetime.fromisoformat(date_str).date() for date_str in guild_data.keys()]
+        )
+        user_counts = [
+            (
+                (guild_data[str(date)]["users"])
+                if "users" in guild_data[str(date)]
+                else 0
+            )
+            for date in dates
+        ]
 
-        img = Image.new('RGB', (1600, 800), color=(32, 34, 38))
+        img = Image.new("RGB", (1600, 800), color=(32, 34, 38))
         draw = ImageDraw.Draw(img)
         font = Font.poppins(size=20)
 
@@ -174,7 +195,7 @@ class Stats(commands.Cog, name="📈 Stats"):
         for y in range(100, 701, y_step):
             draw.line((100, y, 1500, y), fill=(64, 68, 75), width=2)
             number = (max_count - (y - 100) * max_count // 600) / 60 * 60
-            number = int(str(number).split('.')[0])
+            number = int(str(number).split(".")[0])
             draw.text((20, y - 10), str(number), font=font, fill=(255, 255, 255))
 
         bar_color = (128, 128, 128)
@@ -189,18 +210,28 @@ class Stats(commands.Cog, name="📈 Stats"):
                 draw.line((previous_point, (x, y)), fill=line_color, width=5)
             draw.ellipse((x - 5, y - 5, x + 5, y + 5), fill=line_color)
             previous_point = (x, y)
-            textangle(draw, dates[i].strftime('%d %b'), (x - 40, 720), 45, (255, 255, 255), font)
+            textangle(
+                draw,
+                dates[i].strftime("%d %b"),
+                (x - 40, 720),
+                45,
+                (255, 255, 255),
+                font,
+            )
 
-        label_text = f'Member Count - Last 30 days'
+        label_text = f"Member Count - Last 30 days"
 
         label_bbox = draw.textbbox((0, 0), label_text, font=font)
         label_width = label_bbox[2] - label_bbox[0]
         draw.text((20, 20), label_text, font=font, fill=(255, 255, 255))
 
-        img.save(f'graphs/graph-members-{context.channel.id}.png')
-        await context.send(file=discord.File(f'graphs/graph-members-{context.channel.id}.png'))
+        img.save(f"graphs/graph-members-{context.channel.id}.png")
+        await context.send(
+            file=discord.File(f"graphs/graph-members-{context.channel.id}.png")
+        )
 
-        os.remove(f'graphs/graph-members-{context.channel.id}.png')
+        os.remove(f"graphs/graph-members-{context.channel.id}.png")
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Stats(bot))

@@ -1,15 +1,16 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import random
-import os
-import aiohttp
-import time
-import asyncpraw
 import inspect
 import json
-import sys
-
 import logging
+import os
+import random
+import sys
+import time
+
+import aiohttp
+import asyncpraw
+
 logger = logging.getLogger("discord_bot")
 
 import discord
@@ -17,8 +18,8 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from utils import DBClient, Checks
 from ui import translate
+from utils import Checks, DBClient
 
 db = DBClient.db
 
@@ -34,6 +35,7 @@ else:
     with open(f"./config.json") as file:
         config = json.load(file)
 
+
 class General(commands.Cog, name="⬜ General"):
     def __init__(self, bot) -> None:
         self.bot = bot
@@ -43,8 +45,10 @@ class General(commands.Cog, name="⬜ General"):
         self.context_menu_message = app_commands.ContextMenu(
             name="Translate",
             callback=self.ctx_translate,
-            allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
-            allowed_installs=app_commands.AppInstallationType(guild=True, user=True)
+            allowed_contexts=app_commands.AppCommandContext(
+                guild=True, dm_channel=True, private_channel=True
+            ),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
         )
         self.bot.tree.add_command(self.context_menu_spoilers)
         self.bot.tree.add_command(self.context_menu_message)
@@ -74,13 +78,15 @@ class General(commands.Cog, name="⬜ General"):
         if message.content:
             await interaction.response.send_modal(translate.TranslateModal(message))
         else:
-            await interaction.response.send_message("No text to translate", ephemeral=True)
+            await interaction.response.send_message(
+                "No text to translate", ephemeral=True
+            )
 
     @commands.hybrid_command(
         name="help",
         aliases=["h", "commands", "cmds"],
         description="Get help with commands",
-        usage="help [optional: command]"
+        usage="help [optional: command]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -99,7 +105,7 @@ class General(commands.Cog, name="⬜ General"):
             embed = discord.Embed(
                 title=f"Command: {cmd.name}",
                 description=cmd.description,
-                color=0xBEBEFE
+                color=0xBEBEFE,
             )
 
             usage = cmd.usage if cmd.usage else "Not Found"
@@ -107,21 +113,13 @@ class General(commands.Cog, name="⬜ General"):
             embed.add_field(
                 name="Usage",
                 value=f"```Syntax: {usage}\nExample: {example}```",
-                inline=False
+                inline=False,
             )
 
             aliases = ", ".join(cmd.aliases) if cmd.aliases else "None"
-            embed.add_field(
-                name="Aliases",
-                value=f"```{aliases}```",
-                inline=True
-            )
+            embed.add_field(name="Aliases", value=f"```{aliases}```", inline=True)
 
-            embed.add_field(
-                name="Category",
-                value=f"```{cmd.cog_name}```",
-                inline=True
-            )
+            embed.add_field(name="Category", value=f"```{cmd.cog_name}```", inline=True)
 
             cmd_type = ""
 
@@ -132,12 +130,7 @@ class General(commands.Cog, name="⬜ General"):
             elif isinstance(cmd, commands.Command):
                 cmd_type = "Chat Only Command"
 
-
-            embed.add_field(
-                name="Type",
-                value=f"```{cmd_type}```",
-                inline=True
-            )
+            embed.add_field(name="Type", value=f"```{cmd_type}```", inline=True)
 
             params = inspect.signature(cmd.callback).parameters
             param_list = []
@@ -146,22 +139,20 @@ class General(commands.Cog, name="⬜ General"):
                     if param.default == inspect.Parameter.empty:
                         param_list.append(f"{name}: <Required>")
                     else:
-                        param_list.append(f"{name}: [Optional, default: '{param.default}']")
+                        param_list.append(
+                            f"{name}: [Optional, default: '{param.default}']"
+                        )
 
             params_str = "\n".join(param_list) if param_list else "None"
             embed.add_field(
-                name="Parameters",
-                value=f"```{params_str}```",
-                inline=False
+                name="Parameters", value=f"```{params_str}```", inline=False
             )
 
             if isinstance(cmd, commands.HybridGroup):
-                    subcommands = ", ".join([sub.name for sub in cmd.commands])
-                    embed.add_field(
-                        name="Subcommands",
-                        value=f"```{subcommands}```",
-                        inline=False
-                    )
+                subcommands = ", ".join([sub.name for sub in cmd.commands])
+                embed.add_field(
+                    name="Subcommands", value=f"```{subcommands}```", inline=False
+                )
 
             return await context.send(embed=embed)
 
@@ -181,13 +172,9 @@ class General(commands.Cog, name="⬜ General"):
 
         view = CogSelectView(cogs, context.author)
 
-        await context.send('Pick a cog:', view=view)
+        await context.send("Pick a cog:", view=view)
 
-    @commands.command(
-        name="uptime",
-        description="Get the bot's uptime",
-        usage="uptime"
-    )
+    @commands.command(name="uptime", description="Get the bot's uptime", usage="uptime")
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def uptime(self, context: Context):
@@ -196,9 +183,7 @@ class General(commands.Cog, name="⬜ General"):
         await context.send("Uptime: " + str)
 
     @commands.hybrid_command(
-        name="botinfo",
-        description="See bot info",
-        usage="botinfo"
+        name="botinfo", description="See bot info", usage="botinfo"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -210,12 +195,18 @@ class General(commands.Cog, name="⬜ General"):
         memberCount = len(set(self.bot.get_all_members()))
 
         shard_id = context.guild.shard_id if context.guild else None
-        shard = self.bot.get_shard(shard_id) if shard_id is not None else self.bot.shards[0]
+        shard = (
+            self.bot.get_shard(shard_id) if shard_id is not None else self.bot.shards[0]
+        )
         shard_ping = shard.latency
-        shard_servers = len([guild for guild in self.bot.guilds if guild.shard_id == shard_id])
+        shard_servers = len(
+            [guild for guild in self.bot.guilds if guild.shard_id == shard_id]
+        )
         shard_count = len(self.bot.shards)
 
-        embed = discord.Embed(title=f'{self.bot.user.name} - Stats', color = discord.Color.blurple())
+        embed = discord.Embed(
+            title=f"{self.bot.user.name} - Stats", color=discord.Color.blurple()
+        )
 
         command_count = len([command for command in self.bot.walk_commands()])
 
@@ -234,9 +225,7 @@ class General(commands.Cog, name="⬜ General"):
         await context.send(embed=embed)
 
     @commands.hybrid_command(
-        name="ping",
-        description="Check if the bot is alive.",
-        usage="ping"
+        name="ping", description="Check if the bot is alive.", usage="ping"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -251,9 +240,7 @@ class General(commands.Cog, name="⬜ General"):
         await context.send(embed=embed)
 
     @commands.hybrid_command(
-        name="bug",
-        description="Send a bug report",
-        usage="bug <bug>"
+        name="bug", description="Send a bug report", usage="bug <bug>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -262,13 +249,11 @@ class General(commands.Cog, name="⬜ General"):
     async def bug(self, context: Context, *, bug: str) -> None:
         id = int(config["bug_channel"])
         channel = self.bot.get_channel(id)
-        embed = discord.Embed(
-        	title="Bug Report",
-            description=bug,
-            color=0xFF0000
-        )
+        embed = discord.Embed(title="Bug Report", description=bug, color=0xFF0000)
 
-        embed.set_footer(text=f"By {context.author} ({context.author.id}) in {context.guild if context.guild else 'DM'} ({context.guild.id if context.guild else 'DM'})")
+        embed.set_footer(
+            text=f"By {context.author} ({context.author.id}) in {context.guild if context.guild else 'DM'} ({context.guild.id if context.guild else 'DM'})"
+        )
 
         await channel.send(embed=embed)
         await context.send("Bug Reported")
@@ -276,7 +261,7 @@ class General(commands.Cog, name="⬜ General"):
     @commands.hybrid_command(
         name="8ball",
         description="Ask any question to the bot.",
-        usage="8ball <question>"
+        usage="8ball <question>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -303,7 +288,7 @@ class General(commands.Cog, name="⬜ General"):
             "My sources say no.",
             "Outlook not so good.",
             "Very doubtful.",
-            "Potato"
+            "Potato",
         ]
         embed = discord.Embed(
             title="**My Answer:**",
@@ -313,11 +298,7 @@ class General(commands.Cog, name="⬜ General"):
         embed.set_footer(text=f"The question was: {question}")
         await context.send(embed=embed)
 
-    @commands.command(
-        name="support",
-        description="Support Server.",
-        usage="support"
-    )
+    @commands.command(name="support", description="Support Server.", usage="support")
     @commands.check(Checks.command_not_disabled)
     async def support(self, context: commands.Context) -> None:
         message = await context.send("https://discord.gg/wtur9j8uVP")
@@ -326,7 +307,7 @@ class General(commands.Cog, name="⬜ General"):
         name="define",
         description="Get the definition of a word.",
         usage="define <word>",
-        aliases=["dictionary", "dict", "word"]
+        aliases=["dictionary", "dict", "word"],
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -334,28 +315,56 @@ class General(commands.Cog, name="⬜ General"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def define(self, context: Context, *, word: str) -> None:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}") as response:
+            async with session.get(
+                f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+            ) as response:
                 if response.status != 200:
                     return await context.send("No results found.")
 
                 data = await response.json()
                 data = data[0]
 
-                embed = discord.Embed(title=f"Definition of {data['word']}", description=data.get("phonetic", "N/A"), color=0xBEBEFE)
+                embed = discord.Embed(
+                    title=f"Definition of {data['word']}",
+                    description=data.get("phonetic", "N/A"),
+                    color=0xBEBEFE,
+                )
 
                 def truncate_text(text, limit=1024):
                     if len(text) > limit:
-                        return text[:limit-3] + "..."
+                        return text[: limit - 3] + "..."
                     return text
 
-                definitions = "\n".join(f"{i+1}. {definition['definition']}" for i, meaning in enumerate(data["meanings"]) for definition in meaning["definitions"])
+                definitions = "\n".join(
+                    f"{i + 1}. {definition['definition']}"
+                    for i, meaning in enumerate(data["meanings"])
+                    for definition in meaning["definitions"]
+                )
 
-                synonyms = ", ".join(synonym for meaning in data["meanings"] for synonym in meaning.get("synonyms", []))
-                antonyms = ", ".join(antonym for meaning in data["meanings"] for antonym in meaning.get("antonyms", []))
+                synonyms = ", ".join(
+                    synonym
+                    for meaning in data["meanings"]
+                    for synonym in meaning.get("synonyms", [])
+                )
+                antonyms = ", ".join(
+                    antonym
+                    for meaning in data["meanings"]
+                    for antonym in meaning.get("antonyms", [])
+                )
 
-                embed.add_field(name="Definition(s)", value=truncate_text(definitions), inline=False)
-                embed.add_field(name="Synonym(s)", value=truncate_text(synonyms) if synonyms else "None", inline=False)
-                embed.add_field(name="Antonym(s)", value=truncate_text(antonyms) if antonyms else "None", inline=False)
+                embed.add_field(
+                    name="Definition(s)", value=truncate_text(definitions), inline=False
+                )
+                embed.add_field(
+                    name="Synonym(s)",
+                    value=truncate_text(synonyms) if synonyms else "None",
+                    inline=False,
+                )
+                embed.add_field(
+                    name="Antonym(s)",
+                    value=truncate_text(antonyms) if antonyms else "None",
+                    inline=False,
+                )
 
                 await context.send(embed=embed)
 
@@ -363,7 +372,7 @@ class General(commands.Cog, name="⬜ General"):
         name="urban-dictionary",
         description="Get the definition of a word from Urban Dictionary.",
         usage="urban-dictionary <word>",
-        aliases=["urban", "ud"]
+        aliases=["urban", "ud"],
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -371,7 +380,9 @@ class General(commands.Cog, name="⬜ General"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def urban_dict(self, context: Context, *, term: str):
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://api.urbandictionary.com/v0/define?term={term}") as response:
+            async with session.get(
+                f"https://api.urbandictionary.com/v0/define?term={term}"
+            ) as response:
                 data = await response.json()
 
                 if not data["list"]:
@@ -382,7 +393,7 @@ class General(commands.Cog, name="⬜ General"):
                 embed = discord.Embed(
                     title=f"Definition of {term}",
                     description=definition,
-                    color=0xBEBEFE
+                    color=0xBEBEFE,
                 )
 
                 await context.send(embed=embed)
@@ -390,7 +401,7 @@ class General(commands.Cog, name="⬜ General"):
     @commands.hybrid_command(
         name="reddit",
         description="Returns a random post from reddit, or from a subreddit",
-        usage="reddit [optional: subreddit]"
+        usage="reddit [optional: subreddit]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -402,13 +413,19 @@ class General(commands.Cog, name="⬜ General"):
         else:
             subreddit = await reddit.subreddit(subreddit)
 
-        #check if NSFW
+        # check if NSFW
         loaded_sub = subreddit
         await loaded_sub.load()
 
         if loaded_sub.over18:
-            if hasattr(context.channel, "is_nsfw") and not context.channel.is_nsfw() and context.channel.id != context.author.id:
-                await context.send("This subreddit is NSFW, please use this command in a NSFW channel or dms.")
+            if (
+                hasattr(context.channel, "is_nsfw")
+                and not context.channel.is_nsfw()
+                and context.channel.id != context.author.id
+            ):
+                await context.send(
+                    "This subreddit is NSFW, please use this command in a NSFW channel or dms."
+                )
                 return
 
         posts = []
@@ -422,7 +439,9 @@ class General(commands.Cog, name="⬜ General"):
 
         while True:
             if len(posts) == 0:
-                await context.send("No posts that are not NSFW found, try again or run command in an NSFW channel or dms.")
+                await context.send(
+                    "No posts that are not NSFW found, try again or run command in an NSFW channel or dms."
+                )
                 return
 
             random_post = random.choice(posts)
@@ -432,7 +451,11 @@ class General(commands.Cog, name="⬜ General"):
             await loaded_post.load()
 
             if loaded_post.over_18:
-                if hasattr(context.channel, "is_nsfw") and not context.channel.is_nsfw() and context.channel.id != context.author.id:
+                if (
+                    hasattr(context.channel, "is_nsfw")
+                    and not context.channel.is_nsfw()
+                    and context.channel.id != context.author.id
+                ):
                     continue
 
             if loaded_post.stickied:
@@ -453,15 +476,13 @@ class General(commands.Cog, name="⬜ General"):
             color=0xBEBEFE,
         )
 
-        if random_post.url.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+        if random_post.url.endswith((".jpg", ".jpeg", ".png", ".gif")):
             embed.set_image(url=random_post.url)
 
         await context.send(embed=embed)
 
     @commands.hybrid_command(
-        name="vote",
-        description="Vote for the bot on top.gg",
-        usage="vote"
+        name="vote", description="Vote for the bot on top.gg", usage="vote"
     )
     @commands.check(Checks.command_not_disabled)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -471,22 +492,29 @@ class General(commands.Cog, name="⬜ General"):
             title="Vote on top.gg",
             description="Help out the bot by voting now!",
             url="https://top.gg/bot/1226487228914602005/vote",
-            color=0xBEBEFE
+            color=0xBEBEFE,
         )
 
         await context.send(embed=embed, view=VoteView())
 
+
 class VoteButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(style=discord.ButtonStyle.link, label="Vote on top.gg", url="https://top.gg/bot/1226487228914602005/vote")
+        super().__init__(
+            style=discord.ButtonStyle.link,
+            label="Vote on top.gg",
+            url="https://top.gg/bot/1226487228914602005/vote",
+        )
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.send_message("Thank you for voting!", ephemeral=True)
+
 
 class VoteView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(VoteButton())
+
 
 class CogSelect(discord.ui.Select):
     def __init__(self, cogs, author):
@@ -494,12 +522,16 @@ class CogSelect(discord.ui.Select):
             discord.SelectOption(label=cog, description=f"Show commands for {cog}")
             for cog in cogs
         ]
-        super().__init__(placeholder='Choose a cog...', min_values=1, max_values=1, options=options)
+        super().__init__(
+            placeholder="Choose a cog...", min_values=1, max_values=1, options=options
+        )
         self.author = author
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user != self.author:
-            await interaction.response.send_message("You cannot use this select.", ephemeral=True)
+            await interaction.response.send_message(
+                "You cannot use this select.", ephemeral=True
+            )
             return
 
         await interaction.response.defer()
@@ -510,22 +542,30 @@ class CogSelect(discord.ui.Select):
         data = []
         for command in commands:
             description = command.description.partition("\n")[0]
-            data.append(f"{await interaction.client.get_prefix(interaction)}{command.name} - {description}")
+            data.append(
+                f"{await interaction.client.get_prefix(interaction)}{command.name} - {description}"
+            )
         help_text = "\n".join(data)
         embed = discord.Embed(
-            title=f"Help: {cog_name}", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: {cog_name}",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
         embed.add_field(
             name=cog_name.capitalize(), value=f"```{help_text}```", inline=False
         )
-        embed.set_footer(text=f"To get more info on a command, use {await interaction.client.get_prefix(interaction)}help <command>")
+        embed.set_footer(
+            text=f"To get more info on a command, use {await interaction.client.get_prefix(interaction)}help <command>"
+        )
 
         await interaction.message.edit(embed=embed)
+
 
 class CogSelectView(discord.ui.View):
     def __init__(self, cogs, author):
         super().__init__(timeout=None)
         self.add_item(CogSelect(cogs, author))
+
 
 async def setup(bot) -> None:
     await bot.add_cog(General(bot))

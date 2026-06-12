@@ -1,5 +1,6 @@
 import discord
 
+
 class deleteconfirm(discord.ui.View):
     def __init__(self, user, channel):
         super().__init__(timeout=None)

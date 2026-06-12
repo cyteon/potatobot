@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 from typing import Final
+
 
 def guild_data_template(guild_id):
     return {
@@ -26,11 +26,7 @@ def guild_data_template(guild_id):
         "fakeperms": {},
         "authorized_bots": [],
         "disabled_commands": [],
-        "starboard": {
-            "channel": 0,
-            "threshold": 5,
-            "enabled": False
-        },
+        "starboard": {"channel": 0, "threshold": 5, "enabled": False},
         "security": {
             "antinuke": {
                 "anti_danger_perms": False,
@@ -41,8 +37,9 @@ def guild_data_template(guild_id):
                 "anti_webhook_spam": False,
                 "anti_unauthorized_bot": False,
             }
-        }
+        },
     }
+
 
 def user_data_template(user_id, guild_id):
     return {
@@ -54,16 +51,12 @@ def user_data_template(user_id, guild_id):
         "last_daily": 0,
         "last_robbed_at": 0,
         "jailed": False,
-        "farm": {
-            "saplings": 0,
-            "crops": 0,
-            "harvestable": 0,
-            "ready_in": 0
-        },
+        "farm": {"saplings": 0, "crops": 0, "harvestable": 0, "ready_in": 0},
         "warnings": [],
         "whitelisted": False,
-        "trusted": False
+        "trusted": False,
     }
+
 
 def user_global_data_template(user_id):
     return {
@@ -78,8 +71,9 @@ def user_global_data_template(user_id):
             "nsfw_requests": 0,
             "ai_requests": 0,
         },
-        "strikes": []
+        "strikes": [],
     }
+
 
 LEVELS_AND_XP: Final = {  # credit's for this goes to the mee6 developers as we use the same xp values as them
     0: 0,

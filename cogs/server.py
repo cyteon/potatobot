@@ -1,19 +1,18 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import discord
 import os
+
 import aiohttp
-
+import discord
 from cryptography.fernet import Fernet
-
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from utils import CachedDB, Checks, DBClient, CONSTANTS
 from ui.setup import StartSetupView
-
+from utils import CONSTANTS, CachedDB, Checks, DBClient
 
 db = DBClient.db
+
 
 class Server(commands.Cog, name="⚙️ Server"):
     def __init__(self, bot) -> None:
@@ -21,28 +20,24 @@ class Server(commands.Cog, name="⚙️ Server"):
         self.prefixDB = bot.prefixDB
 
     @commands.hybrid_command(
-        name="setup",
-        description="It's setup time!!!!!!",
-        usage="testcommand"
+        name="setup", description="It's setup time!!!!!!", usage="testcommand"
     )
     @commands.check(Checks.is_not_blacklisted)
     async def setup(self, context: Context) -> None:
         if context.author.id != context.guild.owner.id:
-            await context.send("You must be the owner of the server to run this command.")
+            await context.send(
+                "You must be the owner of the server to run this command."
+            )
             return
 
         embed = discord.Embed(
-            title="Setup",
-            description="Let's set up your server!",
-            color=0x2F3136
+            title="Setup", description="Let's set up your server!", color=0x2F3136
         )
 
         await context.send(embed=embed, view=StartSetupView(context.guild.id))
 
     @commands.command(
-        name="prefix",
-        description="Change the bot prefix",
-        usage="prefix <symbol>"
+        name="prefix", description="Change the bot prefix", usage="prefix <symbol>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
@@ -62,7 +57,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @commands.hybrid_command(
         name="groq-api-key",
         description="Set API key for AI (run in private channel please)",
-        usage="groq-api-key <key>"
+        usage="groq-api-key <key>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
@@ -85,7 +80,7 @@ class Server(commands.Cog, name="⚙️ Server"):
         if key == "NONE":
             cipher_text = "NONE"
 
-        newdata = { "$set": { "groq_api_key": cipher_text } }
+        newdata = {"$set": {"groq_api_key": cipher_text}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -94,12 +89,14 @@ class Server(commands.Cog, name="⚙️ Server"):
     @commands.hybrid_command(
         name="stealemoji",
         description="Steal an emoji from another server.",
-        usage="stealemoji <emoji> <name>"
+        usage="stealemoji <emoji> <name>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
-    async def stealemoji(self, context: Context, emoji: discord.PartialEmoji, name: str) -> None:
+    async def stealemoji(
+        self, context: Context, emoji: discord.PartialEmoji, name: str
+    ) -> None:
         try:
             emoji_bytes = await emoji.read()
             await context.guild.create_custom_emoji(
@@ -119,7 +116,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @commands.hybrid_command(
         name="emojifromurl",
         description="Add an emoji from a URL.",
-        usage="emojifromurl <url> <name>"
+        usage="emojifromurl <url> <name>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_emojis=True)
@@ -147,7 +144,7 @@ class Server(commands.Cog, name="⚙️ Server"):
         name="settings",
         description="Command to change server settings",
         aliases=["setting"],
-        usage="settings <subcommand> [args]"
+        usage="settings <subcommand> [args]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
@@ -158,22 +155,22 @@ class Server(commands.Cog, name="⚙️ Server"):
 
         for subcommand in subcommands:
             description = subcommand.description.partition("\n")[0]
-            data.append(f"{await self.bot.get_prefix(context)}settings {subcommand.name} - {description}")
+            data.append(
+                f"{await self.bot.get_prefix(context)}settings {subcommand.name} - {description}"
+            )
 
         help_text = "\n".join(data)
         embed = discord.Embed(
-            title=f"Help: Settings", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Settings",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{help_text}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{help_text}```", inline=False)
 
         await context.send(embed=embed)
 
     @settings.command(
-        name="show",
-        description="Show server settings",
-        usage="settings show"
+        name="show", description="Show server settings", usage="settings show"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
@@ -185,31 +182,50 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        embed = discord.Embed(
-            title="Server Settings",
-            color=discord.Color.blue()
-        )
+        embed = discord.Embed(title="Server Settings", color=discord.Color.blue())
 
-        embed.add_field( name="Daily Cash", value=data["daily_cash"] )
-        embed.add_field( name="Tickets Category",
-                        value=context.guild.get_channel(data["tickets_category"]).name.capitalize() if data["tickets_category"] else "None" )
-        embed.add_field( name="Tickets Support Role",
-                        value=context.guild.get_role(data["tickets_support_role"]).mention if data["tickets_support_role"] else "None" )
-        embed.add_field( name="Log Channel", value=context.guild.get_channel(data["log_channel"]).mention if data["log_channel"] else "None" )
-        embed.add_field( name="Level Roles", value="`/setting level_roles show`")
-        embed.add_field( name="Level Announce Channel",
-                        value=context.guild.get_channel( data["level_announce_channel"]).mention if (
-                                "level_announce_channel" in data and context.guild.get_channel(data["level_announce_channel"]) != None
-                            ) else "None"
-                        )
-        embed.add_field( name="Should announce levelup", value=data["should_announce_levelup"] if "should_announce_levelup" in data else "idk")
+        embed.add_field(name="Daily Cash", value=data["daily_cash"])
+        embed.add_field(
+            name="Tickets Category",
+            value=context.guild.get_channel(data["tickets_category"]).name.capitalize()
+            if data["tickets_category"]
+            else "None",
+        )
+        embed.add_field(
+            name="Tickets Support Role",
+            value=context.guild.get_role(data["tickets_support_role"]).mention
+            if data["tickets_support_role"]
+            else "None",
+        )
+        embed.add_field(
+            name="Log Channel",
+            value=context.guild.get_channel(data["log_channel"]).mention
+            if data["log_channel"]
+            else "None",
+        )
+        embed.add_field(name="Level Roles", value="`/setting level_roles show`")
+        embed.add_field(
+            name="Level Announce Channel",
+            value=context.guild.get_channel(data["level_announce_channel"]).mention
+            if (
+                "level_announce_channel" in data
+                and context.guild.get_channel(data["level_announce_channel"]) != None
+            )
+            else "None",
+        )
+        embed.add_field(
+            name="Should announce levelup",
+            value=data["should_announce_levelup"]
+            if "should_announce_levelup" in data
+            else "idk",
+        )
 
         await context.send(embed=embed)
 
     @settings.command(
         name="announce-levelup",
         description="Should levelups be announced?",
-        usage="settings announce-levelup <enabled>"
+        usage="settings announce-levelup <enabled>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -221,7 +237,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "should_announce_levelup": enabled } }
+        newdata = {"$set": {"should_announce_levelup": enabled}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -230,7 +246,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="daily-cash",
         description="Set daily cash amount",
-        usage="settings daily-cash <amount>"
+        usage="settings daily-cash <amount>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(administrator=True)
@@ -243,7 +259,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "daily_cash": amount } }
+        newdata = {"$set": {"daily_cash": amount}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -252,11 +268,13 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="tickets-category",
         description="Set category where tickets are created",
-        usage="settings tickets-category <category>"
+        usage="settings tickets-category <category>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(administrator=True)
-    async def tickets_category(self, context: Context, category: discord.CategoryChannel) -> None:
+    async def tickets_category(
+        self, context: Context, category: discord.CategoryChannel
+    ) -> None:
         c = db["guilds"]
 
         data = c.find_one({"id": context.guild.id})
@@ -265,7 +283,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "tickets_category": category.id } }
+        newdata = {"$set": {"tickets_category": category.id}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -274,11 +292,13 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="level-up-channel",
         description="Set level up announce channel",
-        usage="settings level-up-channel <channel>"
+        usage="settings level-up-channel <channel>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
-    async def level_up_channel(self, context: Context, channel: discord.TextChannel) -> None:
+    async def level_up_channel(
+        self, context: Context, channel: discord.TextChannel
+    ) -> None:
         c = db["guilds"]
 
         data = c.find_one({"id": context.guild.id})
@@ -287,7 +307,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "level_announce_channel": channel.id } }
+        newdata = {"$set": {"level_announce_channel": channel.id}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -296,7 +316,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="tickets-support-role",
         description="Set ticket support role",
-        usage="settings tickets-support-role <role>"
+        usage="settings tickets-support-role <role>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -309,7 +329,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "tickets_support_role": role.id } }
+        newdata = {"$set": {"tickets_support_role": role.id}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -318,7 +338,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="log-channel",
         description="Set log channel",
-        usage="settings log-channel <channel>"
+        usage="settings log-channel <channel>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
@@ -331,7 +351,7 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        newdata = { "$set": { "log_channel": channel.id } }
+        newdata = {"$set": {"log_channel": channel.id}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -340,7 +360,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.command(
         name="default-role",
         description="Set default role to be given to new members",
-        usage="settings default-role <role>"
+        usage="settings default-role <role>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -368,9 +388,11 @@ class Server(commands.Cog, name="⚙️ Server"):
 
         for permission in dangerous_permissions:
             if getattr(role.permissions, permission):
-                return await context.send("The role has dangerous permissions. Please choose a role without dangerous permissions.")
+                return await context.send(
+                    "The role has dangerous permissions. Please choose a role without dangerous permissions."
+                )
 
-        newdata = { "$set": { "default_role": role.id } }
+        newdata = {"$set": {"default_role": role.id}}
 
         c.update_one({"id": context.guild.id}, newdata)
 
@@ -379,7 +401,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @settings.group(
         name="level-roles",
         description="Commands to set up level roles",
-        usage="settings level-roles"
+        usage="settings level-roles",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -391,24 +413,17 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        embed = discord.Embed(
-            title="Level Roles",
-            color=discord.Color.blue()
-        )
-
+        embed = discord.Embed(title="Level Roles", color=discord.Color.blue())
 
         for r in data["level_roles"]:
             embed.add_field(
-                name=r,
-                value=context.guild.get_role(data["level_roles"][r]).mention
+                name=r, value=context.guild.get_role(data["level_roles"][r]).mention
             )
 
         await context.send(embed=embed)
 
     @level_roles.command(
-        name="show",
-        description="Show level roles",
-        usage="settings level-roles show"
+        name="show", description="Show level roles", usage="settings level-roles show"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -420,15 +435,11 @@ class Server(commands.Cog, name="⚙️ Server"):
             data = CONSTANTS.guild_data_template(context.guild.id)
             c.insert_one(data)
 
-        embed = discord.Embed(
-            title="Level Roles",
-            color=discord.Color.blue()
-        )
+        embed = discord.Embed(title="Level Roles", color=discord.Color.blue())
 
         for r in data["level_roles"]:
             embed.add_field(
-                name=r,
-                value=context.guild.get_role(data["level_roles"][r]).mention
+                name=r, value=context.guild.get_role(data["level_roles"][r]).mention
             )
 
         await context.send(embed=embed)
@@ -436,7 +447,7 @@ class Server(commands.Cog, name="⚙️ Server"):
     @level_roles.command(
         name="set",
         description="Set level roles",
-        usage="settings level-roles set <level> <role>"
+        usage="settings level-roles set <level> <role>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_roles=True)
@@ -451,7 +462,7 @@ class Server(commands.Cog, name="⚙️ Server"):
         level_roles = data["level_roles"]
         level_roles[str(level)] = role.id
 
-        newdata = { "$set": { "level_roles": level_roles } }
+        newdata = {"$set": {"level_roles": level_roles}}
         c.update_one({"id": context.guild.id}, newdata)
 
         await context.send(f"Set level {level} role to {role.name}")
@@ -460,28 +471,31 @@ class Server(commands.Cog, name="⚙️ Server"):
         name="command",
         description="Commands to re-enable/disable commands",
         aliases=["cmd"],
-        usage="Command <subcommand> [args]"
+        usage="Command <subcommand> [args]",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(manage_channels=True)
     async def cmd(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}cmd {cmd.name} - {cmd.description}" for cmd in self.cmd.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}cmd {cmd.name} - {cmd.description}"
+                for cmd in self.cmd.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Command", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Command",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @cmd.command(
-        name="disable",
-        description="Disable a command",
-        usage="cmd disable <command>"
+        name="disable", description="Disable a command", usage="cmd disable <command>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(administrator=True)
@@ -491,7 +505,9 @@ class Server(commands.Cog, name="⚙️ Server"):
         if not cmd:
             return await context.send("Command not found")
 
-        if cmd.qualified_name.startswith("command") or cmd.qualified_name.startswith("cmd"):
+        if cmd.qualified_name.startswith("command") or cmd.qualified_name.startswith(
+            "cmd"
+        ):
             return await context.send("You cannot disable this command")
 
         guild = await CachedDB.find_one(db["guilds"], {"id": context.guild.id})
@@ -501,18 +517,22 @@ class Server(commands.Cog, name="⚙️ Server"):
             db["guilds"].insert_one(guild)
 
         if cmd.qualified_name in guild["disabled_commands"]:
-            return await context.send(f"The command `{cmd.qualified_name}` is already disabled")
+            return await context.send(
+                f"The command `{cmd.qualified_name}` is already disabled"
+            )
 
         guild["disabled_commands"].append(cmd.qualified_name)
 
-        await CachedDB.update_one(db["guilds"], {"id": context.guild.id}, {"$set": {"disabled_commands": guild["disabled_commands"]}})
+        await CachedDB.update_one(
+            db["guilds"],
+            {"id": context.guild.id},
+            {"$set": {"disabled_commands": guild["disabled_commands"]}},
+        )
 
         await context.send(f"Disabled the command `{cmd.qualified_name}`")
 
     @cmd.command(
-        name="enable",
-        description="Re-enable a command",
-        usage="cmd enable <command>"
+        name="enable", description="Re-enable a command", usage="cmd enable <command>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.has_permissions(administrator=True)
@@ -529,11 +549,17 @@ class Server(commands.Cog, name="⚙️ Server"):
             db["guilds"].insert_one(guild)
 
         if command not in guild["disabled_commands"]:
-            return await context.send(f"The command `{cmd.qualified_name}` is not disabled")
+            return await context.send(
+                f"The command `{cmd.qualified_name}` is not disabled"
+            )
 
         guild["disabled_commands"].remove(cmd.qualified_name)
 
-        await CachedDB.update_one(db["guilds"], {"id": context.guild.id}, {"$set": {"disabled_commands": guild["disabled_commands"]}})
+        await CachedDB.update_one(
+            db["guilds"],
+            {"id": context.guild.id},
+            {"$set": {"disabled_commands": guild["disabled_commands"]}},
+        )
 
         await context.send(f"Re-enabled the command `{cmd.qualified_name}`")
 

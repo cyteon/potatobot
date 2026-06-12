@@ -1,13 +1,14 @@
-import discord
 import asyncio
 import random
 
+import discord
 from discord import ui
-from discord.ui import Button, button, View
+from discord.ui import Button, View, button
 
 from utils import DBClient
 
 db = DBClient.db
+
 
 class GamblingButton(View):
     def __init__(self, amount, authorid):
@@ -15,33 +16,65 @@ class GamblingButton(View):
         self.amount = amount
         self.authorid = authorid
 
-    @button(label="Coin Flip", style=discord.ButtonStyle.primary, custom_id="coin_flip", emoji="🪙")
-    async def coinflip(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="Coin Flip",
+        style=discord.ButtonStyle.primary,
+        custom_id="coin_flip",
+        emoji="🪙",
+    )
+    async def coinflip(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
-        await interaction.response.edit_message(content="Heads or tails?", view=HeadsOrTailsButton(self.amount, self.authorid))
+        await interaction.response.edit_message(
+            content="Heads or tails?",
+            view=HeadsOrTailsButton(self.amount, self.authorid),
+        )
 
-    @button(label="Dice Roll", style=discord.ButtonStyle.primary, custom_id="roll_dice", emoji="🎲")
-    async def diceroll(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="Dice Roll",
+        style=discord.ButtonStyle.primary,
+        custom_id="roll_dice",
+        emoji="🎲",
+    )
+    async def diceroll(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
-        await interaction.response.edit_message(content="Choose a number between 1 and 6", view=RollButton(self.amount, self.authorid))
+        await interaction.response.edit_message(
+            content="Choose a number between 1 and 6",
+            view=RollButton(self.amount, self.authorid),
+        )
 
-    @button(label="Blackjack", style=discord.ButtonStyle.primary, custom_id="blackjack", emoji="🃏")
-    async def blackjack(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="Blackjack",
+        style=discord.ButtonStyle.primary,
+        custom_id="blackjack",
+        emoji="🃏",
+    )
+    async def blackjack(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
         view = BlackjackView(self.amount, self.authorid)
         await view.start_game(interaction)
 
-    @button(label="Slots", style=discord.ButtonStyle.primary, custom_id="slots", emoji="🎰")
+    @button(
+        label="Slots", style=discord.ButtonStyle.primary, custom_id="slots", emoji="🎰"
+    )
     async def slots(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
-        await interaction.response.edit_message(content="LETS GO GAMBLING!!!", view=SlotsButton(self.amount, 1, self.authorid))
+        await interaction.response.edit_message(
+            content="LETS GO GAMBLING!!!",
+            view=SlotsButton(self.amount, 1, self.authorid),
+        )
 
 
 class BlackjackView(View):
@@ -82,9 +115,17 @@ class BlackjackView(View):
         return score
 
     def update_embed(self):
-        embed = discord.Embed(title="Blackjack", color=0x77dd77)
-        embed.add_field(name="Your hand", value=f"{self.player_hand} ({self.player_score})", inline=False)
-        embed.add_field(name="Dealer's hand", value=f"{self.dealer_hand[0]} and hidden", inline=False)  # Show one dealer card
+        embed = discord.Embed(title="Blackjack", color=0x77DD77)
+        embed.add_field(
+            name="Your hand",
+            value=f"{self.player_hand} ({self.player_score})",
+            inline=False,
+        )
+        embed.add_field(
+            name="Dealer's hand",
+            value=f"{self.dealer_hand[0]} and hidden",
+            inline=False,
+        )  # Show one dealer card
         return embed
 
     @button(label="Hit", style=discord.ButtonStyle.primary, custom_id="hit", emoji="👊")
@@ -93,7 +134,9 @@ class BlackjackView(View):
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
         if self.game_over:
-            return await interaction.response.send_message("The game is over", ephemeral=True)
+            return await interaction.response.send_message(
+                "The game is over", ephemeral=True
+            )
 
         c = db["users"]
         user = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -106,31 +149,43 @@ class BlackjackView(View):
             user["wallet"] = max(0, user["wallet"] - self.amount)
 
             newdata = {"$set": {"wallet": user["wallet"]}}
-            c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
+            c.update_one(
+                {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
+            )
 
             embed = self.update_embed()
-            return await interaction.response.edit_message(content="You went over 21! You lost", embed=embed, view=self)
+            return await interaction.response.edit_message(
+                content="You went over 21! You lost", embed=embed, view=self
+            )
 
         if self.player_score == 21:
             self.game_over = True
             user["wallet"] += self.amount
 
             newdata = {"$set": {"wallet": user["wallet"]}}
-            c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
+            c.update_one(
+                {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
+            )
 
             embed = self.update_embed()
-            return await interaction.response.edit_message(content="You got 21! You won", embed=embed, view=self)
+            return await interaction.response.edit_message(
+                content="You got 21! You won", embed=embed, view=self
+            )
 
         embed = self.update_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @button(label="Stand", style=discord.ButtonStyle.primary, custom_id="stand", emoji="🛑")
+    @button(
+        label="Stand", style=discord.ButtonStyle.primary, custom_id="stand", emoji="🛑"
+    )
     async def stand(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
         if self.game_over:
-            return await interaction.response.send_message("The game is over", ephemeral=True)
+            return await interaction.response.send_message(
+                "The game is over", ephemeral=True
+            )
 
         c = db["users"]
         user = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -144,29 +199,41 @@ class BlackjackView(View):
             user["wallet"] += self.amount
 
             newdata = {"$set": {"wallet": user["wallet"]}}
-            c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
+            c.update_one(
+                {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
+            )
 
             embed = self.update_embed()
-            return await interaction.response.edit_message(content="Dealer went over 21! You won", embed=embed, view=self)
+            return await interaction.response.edit_message(
+                content="Dealer went over 21! You won", embed=embed, view=self
+            )
 
         if self.dealer_score > self.player_score:
             self.game_over = True
             user["wallet"] = max(0, user["wallet"] - self.amount)
 
             newdata = {"$set": {"wallet": user["wallet"]}}
-            c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
+            c.update_one(
+                {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
+            )
 
             embed = self.update_embed()
-            return await interaction.response.edit_message(content="Dealer won", embed=embed, view=self)
+            return await interaction.response.edit_message(
+                content="Dealer won", embed=embed, view=self
+            )
 
         if self.dealer_score == self.player_score:
             self.game_over = True
             embed = self.update_embed()
-            return await interaction.response.edit_message(content="It's a tie", embed=embed, view=self)
+            return await interaction.response.edit_message(
+                content="It's a tie", embed=embed, view=self
+            )
 
         self.game_over = True
         embed = self.update_embed()
-        await interaction.response.edit_message(content="Game is over", embed=embed, view=self)
+        await interaction.response.edit_message(
+            content="Game is over", embed=embed, view=self
+        )
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user.id == self.authorid
@@ -179,13 +246,16 @@ class BlackjackView(View):
         embed = self.update_embed()
         await interaction.response.send_message(embed=embed, view=self)
 
+
 class HeadsOrTailsButton(View):
     def __init__(self, amount, authorid):
         super().__init__(timeout=None)
         self.amount = amount
         self.authorid = authorid
 
-    @button(label="Heads", style=discord.ButtonStyle.primary, custom_id="heads",emoji="🪙")
+    @button(
+        label="Heads", style=discord.ButtonStyle.primary, custom_id="heads", emoji="🪙"
+    )
     async def heads(self, interaction: discord.Interaction, button: Button):
         if interaction.user.id != self.authorid:
             return
@@ -199,20 +269,24 @@ class HeadsOrTailsButton(View):
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
 
         if coin == "heads":
-            await interaction.message.edit(content=f"The coin landed on {coin}! You won {self.amount * 2}$")
+            await interaction.message.edit(
+                content=f"The coin landed on {coin}! You won {self.amount * 2}$"
+            )
             data["wallet"] += self.amount * 2
         else:
-            await interaction.message.edit(content=f"The coin landed on {coin}! You lost {self.amount}$")
+            await interaction.message.edit(
+                content=f"The coin landed on {coin}! You lost {self.amount}$"
+            )
             data["wallet"] = max(0, data["wallet"] - self.amount)
 
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
+        newdata = {"$set": {"wallet": data["wallet"]}}
         c.update_one(
             {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
         )
 
-    @button(label="Tails", style=discord.ButtonStyle.primary, custom_id="tails",emoji="🪙")
+    @button(
+        label="Tails", style=discord.ButtonStyle.primary, custom_id="tails", emoji="🪙"
+    )
     async def tails(self, interaction: discord.Interaction, button: Button):
         if interaction.user.id != self.authorid:
             return
@@ -226,18 +300,21 @@ class HeadsOrTailsButton(View):
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
 
         if coin == "tails":
-            await interaction.message.edit(content=f"The coin landed on {coin}! You won {self.amount * 2}$")
+            await interaction.message.edit(
+                content=f"The coin landed on {coin}! You won {self.amount * 2}$"
+            )
             data["wallet"] += self.amount * 2
         else:
-            await interaction.message.edit(content=f"The coin landed on {coin}! You lost {self.amount}$")
+            await interaction.message.edit(
+                content=f"The coin landed on {coin}! You lost {self.amount}$"
+            )
             data["wallet"] = max(0, data["wallet"] - self.amount)
 
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
+        newdata = {"$set": {"wallet": data["wallet"]}}
         c.update_one(
             {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
         )
+
 
 # roll 1 - 6
 class RollButton(View):
@@ -260,14 +337,18 @@ class RollButton(View):
 
         if number == chosen:
             data["wallet"] += self.amount * 5
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
+            await interaction.message.edit(
+                content=f"The dice landed on {number}! You won {self.amount * 5}$"
+            )
         else:
             data["wallet"] = max(0, data["wallet"] - self.amount)
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
+            await interaction.message.edit(
+                content=f"The dice landed on {number}! You lost {self.amount}$"
+            )
 
         c.update_one(
             {"id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$set": {"wallet": data["wallet"]}}
+            {"$set": {"wallet": data["wallet"]}},
         )
 
     @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_1", emoji="1️⃣")
@@ -294,6 +375,7 @@ class RollButton(View):
     async def six(self, interaction: discord.Interaction, button: button):
         await self._roll(interaction, 6)
 
+
 class SlotsButton(View):
     def __init__(self, amount, multii, authorid):
         super().__init__(timeout=None)
@@ -304,12 +386,18 @@ class SlotsButton(View):
         self.outcome_message = "Spin first!"
 
     def getEmbed(self):
-        embed = discord.Embed(title="Slots", description=f"# `{self.result}`", color=0xe86e30)
-        embed.add_field(name="Result:", value=f"```{self.outcome_message}```", inline=False)
+        embed = discord.Embed(
+            title="Slots", description=f"# `{self.result}`", color=0xE86E30
+        )
+        embed.add_field(
+            name="Result:", value=f"```{self.outcome_message}```", inline=False
+        )
         embed.add_field(name="Multiplier:", value=f"```x{self.multii}```", inline=False)
         return embed
 
-    @button(label="Spin", style=discord.ButtonStyle.primary, custom_id="spin", emoji="🎰")
+    @button(
+        label="Spin", style=discord.ButtonStyle.primary, custom_id="spin", emoji="🎰"
+    )
     async def spin(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
@@ -322,26 +410,37 @@ class SlotsButton(View):
         user = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
         user["wallet"] = max(0, user["wallet"] + amount_won)
         newdata = {"$set": {"wallet": user["wallet"]}}
-        c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
+        c.update_one(
+            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
+        )
 
         await interaction.response.edit_message(embed=self.getEmbed(), view=self)
 
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="incmulti", emoji="➕")
-    async def increment_multiplier(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="", style=discord.ButtonStyle.primary, custom_id="incmulti", emoji="➕"
+    )
+    async def increment_multiplier(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
         self.multii += 1
         await interaction.response.edit_message(embed=self.getEmbed(), view=self)
 
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="decmulti", emoji="➖")
-    async def decrement_multiplier(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(
+        label="", style=discord.ButtonStyle.primary, custom_id="decmulti", emoji="➖"
+    )
+    async def decrement_multiplier(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if interaction.user.id != self.authorid:
             return await interaction.response.send_message("Nuh uh :D", ephemeral=True)
 
         if self.multii > 1:  # Prevents multiplier from going below 1
             self.multii -= 1
         await interaction.response.edit_message(embed=self.getEmbed(), view=self)
+
 
 def play_slots(amount, multii):
     symbols = ["🍒", "🍋", "🍉", "⭐", "🔔", "🍇", "🍍", "🍎", "🍓", "🥭"]

@@ -1,22 +1,20 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import os
-import threading
-import uvicorn
 import json
+import os
+import ssl
 import sys
-from bson import ObjectId
-from dotenv import load_dotenv
+import threading
 from typing import Optional
 
-import ssl
-
+import uvicorn
+from bson import ObjectId
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from bot import DiscordBot
-
-from utils import DBClient, CONSTANTS, CachedDB
+from utils import CONSTANTS, CachedDB, DBClient
 
 db = DBClient.db
 
@@ -43,6 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
@@ -51,13 +50,16 @@ class JSONEncoder(json.JSONEncoder):
             return None  # Skip binary data
         return json.JSONEncoder.default(self, obj)
 
+
 @app.get("/")
 async def read_root():
     return {"message": "User: " + bot.user.name + " is online! "}
 
+
 @app.get("/api")
 async def read_api_root():
     return {"message": "OK"}
+
 
 @app.get("/api/commands/{cog}")
 async def get_commands(cog: Optional[str] = "all"):
@@ -67,10 +69,13 @@ async def get_commands(cog: Optional[str] = "all"):
                 "name": (cmd.parent.name + " " if cmd.parent else "") + cmd.name,
                 "description": cmd.description,
                 "cog": cmd.cog_name,
-                "usage": cmd.usage, "aliases": cmd.aliases,
+                "usage": cmd.usage,
+                "aliases": cmd.aliases,
                 "subcommand": cmd.parent != None,
-                "extras": cmd.extras
-            } for cmd in bot.walk_commands() if not "owner" in cmd.cog_name
+                "extras": cmd.extras,
+            }
+            for cmd in bot.walk_commands()
+            if not "owner" in cmd.cog_name
         ]
         return all_commands
     else:
@@ -84,20 +89,24 @@ async def get_commands(cog: Optional[str] = "all"):
             {
                 "name": (cmd.parent.name + " " if cmd.parent else "") + cmd.name,
                 "description": cmd.description,
-                "usage": cmd.usage, "aliases": cmd.aliases,
+                "usage": cmd.usage,
+                "aliases": cmd.aliases,
                 "subcommand": cmd.parent != None,
-                "extras": cmd.extras
-            } for cmd in bot.get_cog(cog).walk_commands()
+                "extras": cmd.extras,
+            }
+            for cmd in bot.get_cog(cog).walk_commands()
         ]
 
         return commands
 
+
 @app.get("/api/cogs")
 async def get_cogs():
     cogs = list(bot.cogs.keys())
-    if 'owner' in cogs:
-        cogs.remove('owner')
+    if "owner" in cogs:
+        cogs.remove("owner")
     return cogs
+
 
 @app.get("/api/guild/{id}")
 async def get_guild(id: int):
@@ -143,7 +152,11 @@ async def get_user(id: int):
         users.insert_one(user_data)
 
     if user_data["blacklisted"]:
-        return {"message": "User is blacklisted.", "status": 403, "reason": user_data["blacklist_reason"]}
+        return {
+            "message": "User is blacklisted.",
+            "status": 403,
+            "reason": user_data["blacklist_reason"],
+        }
 
     mutals = user.mutual_guilds
 
@@ -151,17 +164,16 @@ async def get_user(id: int):
 
     for guild in mutals:
         if guild.get_member(user.id).guild_permissions.administrator:
-            guilds.append({
-                "name": guild.name,
-                "id": str(guild.id),
-                "members": len(guild.members),
-            })
+            guilds.append(
+                {
+                    "name": guild.name,
+                    "id": str(guild.id),
+                    "members": len(guild.members),
+                }
+            )
 
-    return {
-        "name": user.name,
-        "id": user.id,
-        "guilds": guilds
-    }
+    return {"name": user.name, "id": user.id, "guilds": guilds}
+
 
 @app.get("/api/stats")
 async def get_stats():
@@ -171,20 +183,24 @@ async def get_stats():
         "ai_requests": bot.statsDB.get("ai_requests"),
     }
 
+
 def run_fastapi():
     if config["use_ssl"]:
         uvicorn.run(
-            app, host="0.0.0.0",
+            app,
+            host="0.0.0.0",
             port=config["port"],
             ssl_keyfile=config["ssl_keyfile"],
             ssl_certfile=config["ssl_certfile"],
-            ssl_version=ssl.PROTOCOL_TLS
+            ssl_version=ssl.PROTOCOL_TLS,
         )
     else:
         uvicorn.run(
-            app, host="0.0.0.0",
+            app,
+            host="0.0.0.0",
             port=config["port"],
         )
+
 
 thread = threading.Thread(target=run_fastapi)
 thread.start()

@@ -1,20 +1,21 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
-import discord
 import ast
 import os
 import sys
-import pymongo
 from datetime import datetime
 
+import discord
+import pymongo
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from utils import CONSTANTS, DBClient, Checks, CachedDB
+from utils import CONSTANTS, CachedDB, Checks, DBClient
 
 client = DBClient.client
 db = client.potatobot
+
 
 def insert_returns(body):
     # insert return stmt if the last expression is a expression statement
@@ -31,6 +32,7 @@ def insert_returns(body):
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
 
+
 class Owner(commands.Cog, name="owner"):
     def __init__(self, bot) -> None:
         self.bot = bot
@@ -46,21 +48,26 @@ class Owner(commands.Cog, name="owner"):
     async def dev(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}dev {cmd.name} - {cmd.description}" for cmd in self.dev.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}dev {cmd.name} - {cmd.description}"
+                for cmd in self.dev.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Dev", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Dev",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
     @dev.command(
         name="sync",
         description="Sync the slash commands.",
-        usage="dev sync guild/global"
+        usage="dev sync guild/global",
     )
     @app_commands.describe(scope="The scope of the sync. Can be `global` or `guild`")
     @commands.is_owner()
@@ -92,7 +99,7 @@ class Owner(commands.Cog, name="owner"):
     @dev.command(
         name="unsync",
         description="Unsync the slash commands",
-        usage="dev unsync guild/global"
+        usage="dev unsync guild/global",
     )
     @commands.is_owner()
     async def unsync(self, context: Context, scope: str) -> None:
@@ -127,7 +134,9 @@ class Owner(commands.Cog, name="owner"):
         usage="dev sudo <user> <command> [args...]",
     )
     @commands.is_owner()
-    async def sudo(self, context: Context, user: discord.Member, *, command: str) -> None:
+    async def sudo(
+        self, context: Context, user: discord.Member, *, command: str
+    ) -> None:
         message = context.message
         message.author = user
         message.content = context.prefix + command
@@ -200,11 +209,7 @@ class Owner(commands.Cog, name="owner"):
         )
         await context.send(embed=embed)
 
-    @dev.command(
-        name="shutdown",
-        description="bye",
-        usage="dev shutdown"
-    )
+    @dev.command(name="shutdown", description="bye", usage="dev shutdown")
     @commands.is_owner()
     async def shutdown(self, context: Context) -> None:
         embed = discord.Embed(description="Shutting down. Bye! :wave:", color=0xBEBEFE)
@@ -226,10 +231,10 @@ class Owner(commands.Cog, name="owner"):
         usage="embed <title> <description> [footer]",
     )
     @commands.is_owner()
-    async def embed(self, context: Context, description: str = "", title: str = "", footer: str = "") -> None:
-        embed = discord.Embed(
-            title=title, description=description, color=0xBEBEFE
-        )
+    async def embed(
+        self, context: Context, description: str = "", title: str = "", footer: str = ""
+    ) -> None:
+        embed = discord.Embed(title=title, description=description, color=0xBEBEFE)
 
         embed.set_footer(text=footer)
 
@@ -241,7 +246,9 @@ class Owner(commands.Cog, name="owner"):
         usage="dev reply <message_url> <content>",
     )
     @commands.is_owner()
-    async def reply(self, context: Context, message: discord.Message, *, reply: str) -> None:
+    async def reply(
+        self, context: Context, message: discord.Message, *, reply: str
+    ) -> None:
         await message.reply(reply)
 
     @dev.command(
@@ -269,18 +276,17 @@ class Owner(commands.Cog, name="owner"):
         insert_returns(body)
 
         env = {
-            'bot': context.bot,
-            'discord': discord,
-            'commands': commands,
-            'context': context,
-            'db': db,
-            '__import__': __import__
+            "bot": context.bot,
+            "discord": discord,
+            "commands": commands,
+            "context": context,
+            "db": db,
+            "__import__": __import__,
         }
         exec(compile(parsed, filename="<ast>", mode="exec"), env)
 
-        result = (await eval(f"{fn_name}()", env))
+        result = await eval(f"{fn_name}()", env)
         await context.send(result)
-
 
     @dev.command(
         name="enable-ai",
@@ -298,7 +304,7 @@ class Owner(commands.Cog, name="owner"):
             data = CONSTANTS.guild_data_template(target_id)
             c.insert_one(data)
 
-        newdata = { "$set": { "ai_access": True } }
+        newdata = {"$set": {"ai_access": True}}
 
         c.update_one({"id": target_id}, newdata)
 
@@ -320,7 +326,7 @@ class Owner(commands.Cog, name="owner"):
             data = CONSTANTS.guild_data_template(target_id)
             c.insert_one(data)
 
-        newdata = { "$set": { "ai_access": False } }
+        newdata = {"$set": {"ai_access": False}}
 
         c.update_one({"id": target_id}, newdata)
 
@@ -334,7 +340,9 @@ class Owner(commands.Cog, name="owner"):
     @commands.is_owner()
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def blacklist(self, context, user: discord.User, *, reason: str = "No reason provided"):
+    async def blacklist(
+        self, context, user: discord.User, *, reason: str = "No reason provided"
+    ):
         users_global = db["users_global"]
         user_data = users_global.find_one({"id": user.id})
 
@@ -342,12 +350,7 @@ class Owner(commands.Cog, name="owner"):
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
-        newdata = {
-            "$set": {
-                "blacklisted": True,
-                "blacklist_reason": reason
-            }
-        }
+        newdata = {"$set": {"blacklisted": True, "blacklist_reason": reason}}
 
         await CachedDB.update_one(users_global, {"id": user.id}, newdata)
 
@@ -356,7 +359,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title=f"You have been blacklisted from using the bot",
             color=0xE02B2B,
-            description=f"Reason: {reason}"
+            description=f"Reason: {reason}",
         )
 
         try:
@@ -380,12 +383,7 @@ class Owner(commands.Cog, name="owner"):
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
-        newdata = {
-            "$set": {
-                "blacklisted": False,
-                "blacklist_reason": ""
-            }
-        }
+        newdata = {"$set": {"blacklisted": False, "blacklist_reason": ""}}
 
         await CachedDB.update_one(users_global, {"id": user.id}, newdata)
 
@@ -407,7 +405,9 @@ class Owner(commands.Cog, name="owner"):
         usage="ai_ignore <user> [reason: optional]",
     )
     @commands.is_owner()
-    async def ai_ignore(self, context, user: discord.User, *, reason: str = "No reason provided"):
+    async def ai_ignore(
+        self, context, user: discord.User, *, reason: str = "No reason provided"
+    ):
         users_global = db["users_global"]
         user_data = users_global.find_one({"id": user.id})
 
@@ -415,12 +415,7 @@ class Owner(commands.Cog, name="owner"):
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
-        newdata = {
-            "$set": {
-                "ai_ignore": True,
-                "ai_ignore_reason": reason
-            }
-        }
+        newdata = {"$set": {"ai_ignore": True, "ai_ignore_reason": reason}}
 
         await CachedDB.update_one(users_global, {"id": user.id}, newdata)
 
@@ -440,12 +435,7 @@ class Owner(commands.Cog, name="owner"):
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
-        newdata = {
-            "$set": {
-                "ai_ignore": False,
-                "ai_ignore_reason": ""
-            }
-        }
+        newdata = {"$set": {"ai_ignore": False, "ai_ignore_reason": ""}}
 
         await CachedDB.update_one(users_global, {"id": user.id}, newdata)
 
@@ -465,29 +455,38 @@ class Owner(commands.Cog, name="owner"):
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
-        embed = discord.Embed(
-            title=f"Inspecting {user}",
-            color=0xBEBEFE
-        )
+        embed = discord.Embed(title=f"Inspecting {user}", color=0xBEBEFE)
 
-        embed.add_field(name="Total Commands", value=user_data["inspect"]["total_commands"])
-        embed.add_field(name="Times Flagged", value=user_data["inspect"]["times_flagged"])
-        embed.add_field(name="NSFW Requests", value=user_data["inspect"]["nsfw_requests"])
+        embed.add_field(
+            name="Total Commands", value=user_data["inspect"]["total_commands"]
+        )
+        embed.add_field(
+            name="Times Flagged", value=user_data["inspect"]["times_flagged"]
+        )
+        embed.add_field(
+            name="NSFW Requests", value=user_data["inspect"]["nsfw_requests"]
+        )
 
         # STUFF THAT MIGHT NOT BE FOUND
         if "ai_requests" in user_data["inspect"]:
-            embed.add_field(name="AI Requests", value=user_data["inspect"]["ai_requests"])
+            embed.add_field(
+                name="AI Requests", value=user_data["inspect"]["ai_requests"]
+            )
 
         if user_data["blacklisted"]:
-            embed.add_field(name="Blacklist Reason", value=user_data["blacklist_reason"])
+            embed.add_field(
+                name="Blacklist Reason", value=user_data["blacklist_reason"]
+            )
 
         if user_data["ai_ignore"]:
-            embed.add_field(name="AI Ignore Reason", value=user_data["ai_ignore_reason"])
+            embed.add_field(
+                name="AI Ignore Reason", value=user_data["ai_ignore_reason"]
+            )
 
         await context.send(embed=embed)
 
     @commands.command(
-    	name="inspect-clear",
+        name="inspect-clear",
         description="Clear someones inspect data",
         usage="inspect-clear <user>",
     )
@@ -496,7 +495,12 @@ class Owner(commands.Cog, name="owner"):
         users_global = db["users_global"]
 
         newdata = {
-            "$set": {"inspect.total_commands": 0, "inspect.times_flagged": 0, "inspect.nsfw_requests": 0, "inspect.ai_requests": 0}
+            "$set": {
+                "inspect.total_commands": 0,
+                "inspect.times_flagged": 0,
+                "inspect.nsfw_requests": 0,
+                "inspect.ai_requests": 0,
+            }
         }
 
         users_global.update_one({"id": user.id}, newdata)
@@ -506,55 +510,51 @@ class Owner(commands.Cog, name="owner"):
         await context.send(f"Cleared inspect info for {user.mention}")
 
     @commands.command(
-        name="top-flagged",
-        description="Get the top flagged users",
-        usage="top-flagged"
+        name="top-flagged", description="Get the top flagged users", usage="top-flagged"
     )
     @commands.is_owner()
     async def top_flagged(self, context):
         users_global = db["users_global"]
         users = users_global.find().sort("inspect.times_flagged", -1).limit(10)
 
-        embed = discord.Embed(
-            title="Top Flagged Users",
-            color=0xBEBEFE
-        )
+        embed = discord.Embed(title="Top Flagged Users", color=0xBEBEFE)
 
         for user in users:
             discord_user = self.bot.get_user(user["id"])
             if not discord_user:
                 continue
-            embed.add_field(name=f"{str(discord_user).capitalize()} ({discord_user.id})", value= f"Flagged **{user['inspect']['times_flagged']}** times", inline=False)
+            embed.add_field(
+                name=f"{str(discord_user).capitalize()} ({discord_user.id})",
+                value=f"Flagged **{user['inspect']['times_flagged']}** times",
+                inline=False,
+            )
 
         await context.send(embed=embed)
 
     @commands.command(
-        name="top-nsfw",
-        description="Get the top NSFW requesters",
-        usage="top-nsfw"
+        name="top-nsfw", description="Get the top NSFW requesters", usage="top-nsfw"
     )
     @commands.is_owner()
     async def top_nsfw(self, context):
         users_global = db["users_global"]
         users = users_global.find().sort("inspect.nsfw_requests", -1).limit(10)
 
-        embed = discord.Embed(
-            title="Top NSFW Requesters",
-            color=0xBEBEFE
-        )
+        embed = discord.Embed(title="Top NSFW Requesters", color=0xBEBEFE)
 
         for user in users:
             discord_user = self.bot.get_user(user["id"])
             if not discord_user:
                 continue
-            embed.add_field(name=f"{str(discord_user).capitalize()} ({discord_user.id})", value= f"**{user['inspect']['nsfw_requests']}** NSFW requests", inline=False)
+            embed.add_field(
+                name=f"{str(discord_user).capitalize()} ({discord_user.id})",
+                value=f"**{user['inspect']['nsfw_requests']}** NSFW requests",
+                inline=False,
+            )
 
         await context.send(embed=embed)
 
     @commands.command(
-        name="ai-announce",
-        description="Announce smth",
-        usage="ai-announce <message>"
+        name="ai-announce", description="Announce smth", usage="ai-announce <message>"
     )
     @commands.is_owner()
     async def ai_announce(self, context, *, message: str):
@@ -574,7 +574,7 @@ class Owner(commands.Cog, name="owner"):
     @dev.command(
         name="copy-db-to-backup",
         description="Copy the database to a backup",
-        usage="dev copy-db-to-backup"
+        usage="dev copy-db-to-backup",
     )
     @commands.is_owner()
     async def copy_db_to_backup(self, context):
@@ -603,7 +603,8 @@ class Owner(commands.Cog, name="owner"):
         for guild in db["guilds"].find():
             backup_db["guilds"].insert_one(guild)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :tools:
@@ -613,9 +614,11 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :x:
             Copying starboard: :x:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -625,12 +628,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :x:
             Copying starboard: :x:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
         for channel in db["ai_channels"].find():
             backup_db["ai_channels"].insert_one(channel)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -640,12 +645,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :x:
             Copying starboard: :x:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
         for user in db["users"].find():
             backup_db["users"].insert_one(user)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -655,12 +662,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :x:
             Copying starboard: :x:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
         for convo in db["ai_convos"].find():
             backup_db["ai_convos"].insert_one(convo)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -670,12 +679,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :tools:
             Copying starboard: :x:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
         for user in db["users_global"].find():
             backup_db["users_global"].insert_one(user)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -685,12 +696,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :white_check_mark:
             Copying starboard: :tools:
             Copying reaction roles: :x:
-        """)
+        """
+        )
 
         for starboard in db["starboard"].find():
             backup_db["starboard"].insert_one(starboard)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -700,12 +713,14 @@ class Owner(commands.Cog, name="owner"):
             Copying global user data: :white_check_mark:
             Copying starboard: :white_check_mark:
             Copying reaction roles: :tools:
-        """)
+        """
+        )
 
         for starboard in db["reactionroles"].find():
             backup_db["reactionroles"].insert_one(starboard)
 
-        await message.edit(content="""
+        await message.edit(
+            content="""
         Status:
             Removing old data: :white_check_mark:
             Copying guilds: :white_check_mark:
@@ -717,7 +732,8 @@ class Owner(commands.Cog, name="owner"):
             Copying reaction roles: :white_check_mark:
 
             **Backup Done!!!**
-        """)
+        """
+        )
 
     @commands.command(
         name="force_system_prompt",
@@ -728,38 +744,33 @@ class Owner(commands.Cog, name="owner"):
         c = db["guilds"]
         data = c.find_one({"id": context.guild.id})
 
-        newdata = {
-                "$set": { "system_prompt": prompt }
-        }
+        newdata = {"$set": {"system_prompt": prompt}}
 
-        c.update_one(
-            { "id": context.guild.id }, newdata
-        )
+        c.update_one({"id": context.guild.id}, newdata)
 
         await context.send("System prompt set to: " + prompt)
 
-    @commands.hybrid_group(
-        name="strikes",
-        description="Stuff for striking users"
-    )
+    @commands.hybrid_group(name="strikes", description="Stuff for striking users")
     async def strikes(self, context: Context):
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}strikes {cmd.name} - {cmd.description}" for cmd in self.strikes.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}strikes {cmd.name} - {cmd.description}"
+                for cmd in self.strikes.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Strikes", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Strikes",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
-    @strikes.command(
-        name="add",
-        description="Strike a user"
-    )
+    @strikes.command(name="add", description="Strike a user")
     @commands.is_owner()
     async def add(self, context: Context, user: discord.User, *, reason: str):
         users = db["users_global"]
@@ -772,18 +783,22 @@ class Owner(commands.Cog, name="owner"):
         if not "strikes" in user_data:
             user_data["strikes"] = []
 
-        user_data["strikes"].append({"reason": reason, "time": datetime.now().strftime("%d.%m.%Y %H:%M:%S")})
+        user_data["strikes"].append(
+            {"reason": reason, "time": datetime.now().strftime("%d.%m.%Y %H:%M:%S")}
+        )
 
         newdata = {"$set": {"strikes": user_data["strikes"]}}
 
         users.update_one({"id": user.id}, newdata)
 
-        await context.send(f"{user.mention} has been striked for **{reason}** | This is strike {len(user_data['strikes'])}")
+        await context.send(
+            f"{user.mention} has been striked for **{reason}** | This is strike {len(user_data['strikes'])}"
+        )
 
         embed = discord.Embed(
             title=f"You have received a global strike",
             color=0xE02B2B,
-            description=f"Reason: {reason}"
+            description=f"Reason: {reason}",
         )
         embed.set_footer(text="Time: " + datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
 
@@ -792,10 +807,7 @@ class Owner(commands.Cog, name="owner"):
         except Exception as e:
             await context.send(f"Could not send message to {user.mention} due to: {e}")
 
-    @strikes.command(
-        name="remove",
-        description="Remove a strike from a user"
-    )
+    @strikes.command(name="remove", description="Remove a strike from a user")
     @commands.is_owner()
     async def remove(self, context: Context, user: discord.User, id: int):
         users = db["users_global"]
@@ -824,7 +836,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title=f"Globally removed strike | ID: {id}",
             color=0xBEBEFE,
-            description=f"Reason: {reason}"
+            description=f"Reason: {reason}",
         )
         embed.set_footer(text="Time: " + datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
 
@@ -833,10 +845,7 @@ class Owner(commands.Cog, name="owner"):
         except Exception as e:
             await context.send(f"Could not send message to {user.mention} due to: {e}")
 
-    @strikes.command(
-        name="list",
-        description="Lists a users strikes"
-    )
+    @strikes.command(name="list", description="Lists a users strikes")
     @commands.is_owner()
     async def list(self, context: Context, user: discord.User):
         users = db["users_global"]
@@ -849,20 +858,19 @@ class Owner(commands.Cog, name="owner"):
         if not "strikes" in user_data:
             user_data["strikes"] = []
 
-        embed = discord.Embed(
-            title=f"Strikes for {user}",
-            color=0xBEBEFE
-        )
+        embed = discord.Embed(title=f"Strikes for {user}", color=0xBEBEFE)
 
         for i, strike in enumerate(user_data["strikes"]):
-            embed.add_field(name=f"Strike at {strike['time']} | ID: {i}", value=strike["reason"], inline=False)
+            embed.add_field(
+                name=f"Strike at {strike['time']} | ID: {i}",
+                value=strike["reason"],
+                inline=False,
+            )
 
         await context.send(embed=embed)
 
     @commands.command(
-        name="dm",
-        description="DM a user",
-        usage="dev dm <user> <message>"
+        name="dm", description="DM a user", usage="dev dm <user> <message>"
     )
     @commands.is_owner()
     async def dm(self, context: Context, user: discord.User, *, message: str) -> None:
@@ -873,16 +881,16 @@ class Owner(commands.Cog, name="owner"):
             await context.send(f"Could not send message to {user.mention} due to: {e}")
 
     @dev.command(
-        name="simulate-level-up",
-        description="",
-        usage="dev simulate-level-up"
+        name="simulate-level-up", description="", usage="dev simulate-level-up"
     )
     @commands.is_owner()
     async def simulate_level_up(self, context: Context):
         author = context.author
 
         c = db["users"]
-        data = await CachedDB.find_one(c, {"id": author.id, "guild_id": context.guild.id})
+        data = await CachedDB.find_one(
+            c, {"id": author.id, "guild_id": context.guild.id}
+        )
 
         guilds = db["guilds"]
         guild_data = await CachedDB.find_one(guilds, {"id": context.guild.id})
@@ -892,13 +900,20 @@ class Owner(commands.Cog, name="owner"):
             if guild_data:
                 if "level_announce_channel" in guild_data:
                     if guild_data["level_announce_channel"] != 0:
-                        channel = context.guild.get_channel(guild_data["level_announce_channel"])
+                        channel = context.guild.get_channel(
+                            guild_data["level_announce_channel"]
+                        )
 
                 if "should_announce_levelup" in guild_data:
                     if guild_data["should_announce_levelup"]:
-                        await channel.send(f"{author.mention} leveled up to level {data['level']}!")
+                        await channel.send(
+                            f"{author.mention} leveled up to level {data['level']}!"
+                        )
                 else:
-                    await channel.send(f"{author.mention} leveled up to level {data['level']}!")
+                    await channel.send(
+                        f"{author.mention} leveled up to level {data['level']}!"
+                    )
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Owner(bot))

@@ -3,17 +3,18 @@
 import io
 
 from asteval import Interpreter
+
 aeval = Interpreter()
 
 import discord
+from deep_translator import GoogleTranslator
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
-from deep_translator import GoogleTranslator
+from PIL import Image, ImageColor
 
 from utils import Checks
 
-from PIL import ImageColor, Image
 
 class Utility(commands.Cog, name="⚡ Utility"):
     def __init__(self, bot) -> None:
@@ -22,7 +23,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
     @commands.hybrid_group(
         name="convert",
         description="Commands to convert stuff",
-        usage="convert <subcommand>"
+        usage="convert <subcommand>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -31,14 +32,19 @@ class Utility(commands.Cog, name="⚡ Utility"):
     async def convert(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}convert {cmd.name} - {cmd.description}" for cmd in self.convert.walk_commands()])
+        cmds = "\n".join(
+            [
+                f"{prefix}convert {cmd.name} - {cmd.description}"
+                for cmd in self.convert.walk_commands()
+            ]
+        )
 
         embed = discord.Embed(
-            title=f"Help: Convert", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Convert",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{cmds}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{cmds}```", inline=False)
 
         await context.send(embed=embed)
 
@@ -49,7 +55,9 @@ class Utility(commands.Cog, name="⚡ Utility"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-    async def convert_mb_gb(self, context: Context, mb: float, binary: bool = True) -> None:
+    async def convert_mb_gb(
+        self, context: Context, mb: float, binary: bool = True
+    ) -> None:
         if binary:
             gb = mb / 1024
         else:
@@ -64,7 +72,9 @@ class Utility(commands.Cog, name="⚡ Utility"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-    async def convert_gb_mb(self, context: Context, gb: float, binary: bool = True) -> None:
+    async def convert_gb_mb(
+        self, context: Context, gb: float, binary: bool = True
+    ) -> None:
         if binary:
             mb = gb * 1024
         else:
@@ -79,7 +89,9 @@ class Utility(commands.Cog, name="⚡ Utility"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-    async def convert_gb_tb(self, context: Context, gb: float, binary: bool = True) -> None:
+    async def convert_gb_tb(
+        self, context: Context, gb: float, binary: bool = True
+    ) -> None:
         if binary:
             tb = gb / 1024
         else:
@@ -94,7 +106,9 @@ class Utility(commands.Cog, name="⚡ Utility"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-    async def convert_tb_gb(self, context: Context, tb: float, binary: bool = True) -> None:
+    async def convert_tb_gb(
+        self, context: Context, tb: float, binary: bool = True
+    ) -> None:
         if binary:
             gb = tb * 1024
         else:
@@ -119,7 +133,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
             embed = discord.Embed(
                 title="Calculator",
                 description=f"**Input:**\n```{expression}```\n**Output:**\n```{result}```",
-                color=0xBEBEFE
+                color=0xBEBEFE,
             )
 
             await context.send(embed=embed)
@@ -129,7 +143,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
     @commands.hybrid_command(
         name="translate",
         description="Translate text to a specified language example: ,translate en hola",
-        usage="translate <text> <language>"
+        usage="translate <text> <language>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -138,7 +152,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def translate(self, context: Context, language, *, text: str) -> None:
-        translated = GoogleTranslator(source='auto', target=language).translate(text)
+        translated = GoogleTranslator(source="auto", target=language).translate(text)
 
         embed = discord.Embed(
             title="Translation",
@@ -152,7 +166,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
         name="color",
         description="Get information about a color.",
         aliases=["colour"],
-        usage="color <color>"
+        usage="color <color>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -164,7 +178,6 @@ class Utility(commands.Cog, name="⚡ Utility"):
             rgba = ImageColor.getcolor(color, "RGBA")
             grayscale = ImageColor.getcolor(color, "L")
             hex = hex_value = "#{:02x}{:02x}{:02x}".format(*rgb)
-
 
             embed = discord.Embed(
                 title="Color Information",
@@ -193,6 +206,7 @@ class Utility(commands.Cog, name="⚡ Utility"):
         except ValueError:
             await context.send("Invalid color")
             return
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Utility(bot))

@@ -1,7 +1,6 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
 import discord
-
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -11,13 +10,16 @@ db = DBClient.db
 
 from utils import Checks
 
+
 class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
     def __init__(self, bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload) -> None:
-        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": payload.message_id})
+        message_data = await CachedDB.find_one(
+            db["reaction_roles"], {"message_id": payload.message_id}
+        )
         if not message_data:
             return
 
@@ -52,7 +54,9 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload) -> None:
-        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": payload.message_id})
+        message_data = await CachedDB.find_one(
+            db["reaction_roles"], {"message_id": payload.message_id}
+        )
         if not message_data:
             return
 
@@ -66,8 +70,12 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
 
         if emoji_id not in message_data["roles"]:
             try:
-                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                await message.remove_reaction(payload.emoji, self.bot.get_user(payload.user_id))
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(
+                    payload.message_id
+                )
+                await message.remove_reaction(
+                    payload.emoji, self.bot.get_user(payload.user_id)
+                )
             except Exception as e:
                 print(e)
                 pass
@@ -95,7 +103,7 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
         name="reactionroles",
         description="Command to manage reaction roles",
         usage="reactionroles",
-        aliases=["rr"]
+        aliases=["rr"],
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -107,15 +115,17 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
 
         for subcommand in subcommands:
             description = subcommand.description.partition("\n")[0]
-            data.append(f"{await self.bot.get_prefix(context)}reactionroles {subcommand.name} - {description}")
+            data.append(
+                f"{await self.bot.get_prefix(context)}reactionroles {subcommand.name} - {description}"
+            )
 
         help_text = "\n".join(data)
         embed = discord.Embed(
-            title=f"Help: Reaction Roles", description="List of available commands:", color=0xBEBEFE
+            title=f"Help: Reaction Roles",
+            description="List of available commands:",
+            color=0xBEBEFE,
         )
-        embed.add_field(
-            name="Commands", value=f"```{help_text}```", inline=False
-        )
+        embed.add_field(name="Commands", value=f"```{help_text}```", inline=False)
 
         await context.send(embed=embed)
 
@@ -127,7 +137,9 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @commands.has_permissions(manage_roles=True)
-    async def add(self, context: commands.Context, message_id: str, role: discord.Role, emoji: str):
+    async def add(
+        self, context: commands.Context, message_id: str, role: discord.Role, emoji: str
+    ):
         try:
             message_id = int(message_id)
         except:
@@ -152,24 +164,32 @@ class ReactionRoles(commands.Cog, name="🇺🇸 Reaction Roles"):
         try:
             await message.add_reaction(emoji)
         except discord.HTTPException:
-            await context.send("Failed to add reaction. Make sure the bot has permission to add reactions.")
+            await context.send(
+                "Failed to add reaction. Make sure the bot has permission to add reactions."
+            )
             return
 
-        message_data = await CachedDB.find_one(db["reaction_roles"], {"message_id": message_id})
+        message_data = await CachedDB.find_one(
+            db["reaction_roles"], {"message_id": message_id}
+        )
 
         if not message_data:
-            db["reaction_roles"].insert_one({
-                "message_id": message_id,
-                "roles": {emoji_id: str(role.id)}
-            })
+            db["reaction_roles"].insert_one(
+                {"message_id": message_id, "roles": {emoji_id: str(role.id)}}
+            )
             await context.send("Reaction role added.")
         else:
             if emoji_id in message_data["roles"]:
                 await context.send("Reaction role already exists.")
             else:
                 message_data["roles"][emoji_id] = str(role.id)
-                await CachedDB.update_one(db["reaction_roles"], {"message_id": message_id}, {"$set": {"roles": message_data["roles"]}})
+                await CachedDB.update_one(
+                    db["reaction_roles"],
+                    {"message_id": message_id},
+                    {"$set": {"roles": message_data["roles"]}},
+                )
                 await context.send("Reaction role added.")
+
 
 async def setup(bot) -> None:
     await bot.add_cog(ReactionRoles(bot))

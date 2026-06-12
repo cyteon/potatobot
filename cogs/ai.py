@@ -1,58 +1,40 @@
 # This project is licensed under the terms of the GPL v3.0 license. Copyright 2024 Cyteon
 
 FILTERS = [
-    {
-        "old": "@everyone",
-        "new": "@​everyone"
-    },
-    {
-        "old": "@here",
-        "new": "@​here"
-    },
-    {
-        "old": "<@&",
-        "new": "<@&​"
-    },
-    {
-        "old": "discord.gg",
-        "new": "[filtered]"
-    },
-    {
-        "old": "discord.com/invite",
-        "new": "[filtered]"
-    }
+    {"old": "@everyone", "new": "@​everyone"},
+    {"old": "@here", "new": "@​here"},
+    {"old": "<@&", "new": "<@&​"},
+    {"old": "discord.gg", "new": "[filtered]"},
+    {"old": "discord.com/invite", "new": "[filtered]"},
 ]
 
 WORD_BLACKLIST = ["nigger", "nigga", "n i g g e r"]
 
-import discord
-import sys
-import requests
-import io
-import os
-import re
-import time
 import asyncio
+import base64
 import functools
 import http.client
-import aiohttp
-import base64
-import aiohttp
-import logging
+import io
 import json
-
-from io import BytesIO
+import logging
+import os
+import re
+import sys
+import time
 from datetime import datetime
+from io import BytesIO
 
+import aiohttp
+import discord
+import requests
 from better_profanity import profanity
-from groq import Groq
-
-from discord import app_commands, Webhook
+from cryptography.fernet import Fernet
+from discord import Webhook, app_commands
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
-from utils import CONSTANTS, DBClient, Checks, CachedDB
+from groq import Groq
 
-from cryptography.fernet import Fernet
+from utils import CONSTANTS, CachedDB, Checks, DBClient
 
 client = DBClient.client
 db = client.potatobot
@@ -73,14 +55,14 @@ models = [
     "llama3-groq-8b-8192-tool-use-preview",
 ]
 
-api_key = os.getenv('FUSION_API_KEY')
-secret_key = os.getenv('FUSION_SECRET_KEY')
+api_key = os.getenv("FUSION_API_KEY")
+secret_key = os.getenv("FUSION_SECRET_KEY")
 
 ai_temp_disabled = False
 
 ai_channels = []
 c = db["ai_channels"]
-data = c.find_one({ "listOfChannels": True })
+data = c.find_one({"listOfChannels": True})
 logger.info("Initing AI channels")
 
 if data:
@@ -88,14 +70,12 @@ if data:
     logger.info("AI Channels data Found")
 else:
     logger.info("Creating AI Channels data")
-    data = {
-    	"listOfChannels": True,
-         "ai_channels": []
-    }
+    data = {"listOfChannels": True, "ai_channels": []}
     c.insert_one(data)
 
 last_api_key = 1
 total_api_keys = os.getenv("GROQ_API_KEY_COUNT")
+
 
 def get_api_key():
     global last_api_key
@@ -108,58 +88,73 @@ def get_api_key():
 
     return os.getenv("GROQ_API_KEY_" + str(last_api_key))
 
+
 def prompt_ai(
-        prompt="Hello",
-        image_url=None,
-        authorId = 0,
-        channelId = 0,
-        userInfo="",
-        groq_client=None,
-        systemPrompt="none"
-    ):
+    prompt="Hello",
+    image_url=None,
+    authorId=0,
+    channelId=0,
+    userInfo="",
+    groq_client=None,
+    systemPrompt="none",
+):
     c = db["ai_convos"]
     data = {}
 
     messageArray = []
 
     if channelId != 0:
-        data = CachedDB.sync_find_one(c, { "isChannel": True, "id": channelId })
+        data = CachedDB.sync_find_one(c, {"isChannel": True, "id": channelId})
 
         if data:
             messageArray = data["messageArray"]
         else:
-            data = { "isChannel": True, "id": channelId, "messageArray": [], "expiresAt": time.time()+604800 }
+            data = {
+                "isChannel": True,
+                "id": channelId,
+                "messageArray": [],
+                "expiresAt": time.time() + 604800,
+            }
 
             c.insert_one(data)
     elif authorId != 0:
-        data = CachedDB.sync_find_one(c, { "isChannel": False, "id": authorId })
+        data = CachedDB.sync_find_one(c, {"isChannel": False, "id": authorId})
 
         if data:
             messageArray = data["messageArray"]
         else:
-            data = { "isChannel": False, "id": authorId, "messageArray": [], "expiresAt": time.time()+604800 }
+            data = {
+                "isChannel": False,
+                "id": authorId,
+                "messageArray": [],
+                "expiresAt": time.time() + 604800,
+            }
 
             c.insert_one(data)
 
     image_interpretation = ""
 
-    if image_url and image_url.split("?")[0].endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
+    if image_url and image_url.split("?")[0].endswith(
+        (".png", ".jpg", ".jpeg", ".gif", ".webp")
+    ):
         image = requests.get(image_url)
 
         if image.status_code == 200:
             response = requests.post(
                 "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large",
-                headers={
-                    "Authorization": f"Bearer {os.getenv('HF_API_KEY')}"
-                },
-                data=image.content
+                headers={"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"},
+                data=image.content,
             )
 
             if response.status_code == 200:
-                prompt += f" | Image Interpretation: {response.json()[0]['generated_text']}"
-                image_interpretation = response.json()[0]['generated_text']
+                prompt += (
+                    f" | Image Interpretation: {response.json()[0]['generated_text']}"
+                )
+                image_interpretation = response.json()[0]["generated_text"]
             else:
-                logger.info(f"Failed to get image interpretation: {response.status_code}")
+                logger.info(
+                    f"Failed to get image interpretation: {response.status_code}"
+                )
 
     messageArray.append(
         {
@@ -190,15 +185,13 @@ def prompt_ai(
             2: "don't send the support server invite unless prompted to send it, dont send the website unless asked, dont send any link unless asked",
             3: "Never start a message with username:, where username is everything",
         },
-        "self-data": {
-        	"name": "PotatoBot"
-    	}
+        "self-data": {"name": "PotatoBot"},
     }
 
     newMessageArray.append(
-    	{
+        {
             "role": "system",
-            "content": f"{systemPrompt} | SystemInfo: {systemInfo} | UserInfo: {userInfo}"
+            "content": f"{systemPrompt} | SystemInfo: {systemInfo} | UserInfo: {userInfo}",
         }
     )
 
@@ -208,48 +201,45 @@ def prompt_ai(
         # To remove _id (appears from the rewrite in js using same db ig)
         newMessageArray[newMessageArray.index(msg)] = {
             "role": msg["role"],
-            "content": msg["content"]
+            "content": msg["content"],
         }
 
     for model in models:
         try:
-            ai_response = groq_client.chat.completions.create(
-                messages=newMessageArray,
-                model=model,
-                temperature=0.7,
-            ).choices[0].message.content
+            ai_response = (
+                groq_client.chat.completions.create(
+                    messages=newMessageArray,
+                    model=model,
+                    temperature=0.7,
+                )
+                .choices[0]
+                .message.content
+            )
 
             break
         except Exception as e:
             logger.info(f"Error: {e}")
             ai_response = f"Error: {e}"
 
-    messageArray.append(
-        {
-            "role": "assistant",
-            "content": ai_response
-        }
-    )
+    messageArray.append({"role": "assistant", "content": ai_response})
 
-    if len(messageArray) >= 24 :
+    if len(messageArray) >= 24:
         newdata = {
-                "$set": { "messageArray": messageArray[2::],  }
+            "$set": {
+                "messageArray": messageArray[2::],
+            }
         }
     else:
         newdata = {
-                "$set": { "messageArray": messageArray, "expiresAt": time.time()+604800  }
+            "$set": {"messageArray": messageArray, "expiresAt": time.time() + 604800}
         }
 
     if channelId != 0:
-        CachedDB.sync_update_one(
-            c, { "isChannel": True, "id": channelId}, newdata
-        )
+        CachedDB.sync_update_one(c, {"isChannel": True, "id": channelId}, newdata)
     elif authorId != 0:
-        CachedDB.sync_update_one(
-            c, { "isChannel": False, "id": authorId}, newdata
-        )
+        CachedDB.sync_update_one(c, {"isChannel": False, "id": authorId}, newdata)
 
-    ai_response = ai_response.replace("</s>", " ") # It kept sending this somtimes
+    ai_response = ai_response.replace("</s>", " ")  # It kept sending this somtimes
 
     for word in WORD_BLACKLIST:
         if word.lower() in ai_response.lower():
@@ -261,12 +251,13 @@ def prompt_ai(
             # TODO: Fix where if someone makes ai say support server invite and another invite it dosent get filtered
             if systemInfo["support_server"] in ai_response:
                 continue
-        ai_response =  ai_response.replace(filter["old"], filter["new"])
+        ai_response = ai_response.replace(filter["old"], filter["new"])
 
     if image_interpretation:
         ai_response += f"\n-# Image Interpretation: {image_interpretation}"
 
     return ai_response
+
 
 class Text2ImageAPI:
     def __init__(self, url):
@@ -274,16 +265,25 @@ class Text2ImageAPI:
 
     global AUTH_HEADERS
     AUTH_HEADERS = {
-        'X-Key': f'Key {api_key}',
-        'X-Secret': f'Secret {secret_key}',
+        "X-Key": f"Key {api_key}",
+        "X-Secret": f"Secret {secret_key}",
     }
 
     def get_model(self):
-        response = requests.get(self.URL + 'key/api/v1/models', headers=AUTH_HEADERS)
+        response = requests.get(self.URL + "key/api/v1/models", headers=AUTH_HEADERS)
         data = response.json()
-        return data[0]['id']
+        return data[0]["id"]
 
-    def generate(self, prompt, model, images=1, width=1024, height=1024, style="DEFAULT", negative_prompt=""):
+    def generate(
+        self,
+        prompt,
+        model,
+        images=1,
+        width=1024,
+        height=1024,
+        style="DEFAULT",
+        negative_prompt="",
+    ):
         params = {
             "type": "GENERATE",
             "stype": style,
@@ -291,31 +291,35 @@ class Text2ImageAPI:
             "width": width,
             "height": height,
             "negativePromptUnclip": negative_prompt,
-            "generateParams": {
-                "query": f"{prompt}"
-            }
+            "generateParams": {"query": f"{prompt}"},
         }
         data = {
-            'model_id': (None, model),
-            'params': (None, json.dumps(params), 'application/json')
+            "model_id": (None, model),
+            "params": (None, json.dumps(params), "application/json"),
         }
-        response = requests.post(self.URL + 'key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data)
+        response = requests.post(
+            self.URL + "key/api/v1/text2image/run", headers=AUTH_HEADERS, files=data
+        )
         data = response.json()
-        return data['uuid']
+        return data["uuid"]
 
     def check_generation(self, request_id, attempts=10, delay=10):
         while attempts > 0:
-            response = requests.get(self.URL + 'key/api/v1/text2image/status/' + request_id, headers=AUTH_HEADERS)
+            response = requests.get(
+                self.URL + "key/api/v1/text2image/status/" + request_id,
+                headers=AUTH_HEADERS,
+            )
             data = response.json()
 
             logger.info(data)
 
-            if data['status'] == 'DONE':
-                return data['images']
+            if data["status"] == "DONE":
+                return data["images"]
             attempts -= 1
             time.sleep(delay)
 
         raise Exception("An error occured while generating the image")
+
 
 class Ai(commands.Cog, name="🤖 AI"):
     def __init__(self, bot) -> None:
@@ -324,8 +328,12 @@ class Ai(commands.Cog, name="🤖 AI"):
         self.ai_temp_disabled = False
         self.get_prefix = bot.get_prefix
         self.statsDB = bot.statsDB
-        self.cooldown = commands.CooldownMapping.from_cooldown(5, 10, commands.BucketType.user)
-        self.too_many_violations = commands.CooldownMapping.from_cooldown(3, 10, commands.BucketType.user)
+        self.cooldown = commands.CooldownMapping.from_cooldown(
+            5, 10, commands.BucketType.user
+        )
+        self.too_many_violations = commands.CooldownMapping.from_cooldown(
+            3, 10, commands.BucketType.user
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -342,7 +350,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             return
 
         if self.ai_temp_disabled:
-            await message.reply("AI is temporarily disabled due to techincal difficulties")
+            await message.reply(
+                "AI is temporarily disabled due to techincal difficulties"
+            )
             return
 
         bucket = self.cooldown.get_bucket(message)
@@ -358,20 +368,30 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if user_data:
             if user_data["ai_ignore"]:
-                await message.reply("**You are being ignored by the AI, reason: " + user_data["ai_ignore_reason"] + "**")
+                await message.reply(
+                    "**You are being ignored by the AI, reason: "
+                    + user_data["ai_ignore_reason"]
+                    + "**"
+                )
                 return
 
             if user_data["blacklisted"]:
-                await message.reply("**You are blacklisted from using the bot, reason: " + user_data["blacklist_reason"] + "**")
+                await message.reply(
+                    "**You are blacklisted from using the bot, reason: "
+                    + user_data["blacklist_reason"]
+                    + "**"
+                )
                 return
 
         if retry_after:
             embed = discord.Embed(
                 title="Slow Down! Ratelimit hit",
                 description=f"Try again <t:{(time.time() + int(retry_after)):.0f}:R>",
-                color=discord.Color.red()
+                color=discord.Color.red(),
             )
-            embed.set_footer(text="Further violations may result in a mute or blacklist.")
+            embed.set_footer(
+                text="Further violations may result in a mute or blacklist."
+            )
 
             await message.reply(embed=embed)
 
@@ -382,50 +402,43 @@ class Ai(commands.Cog, name="🤖 AI"):
                 embed = discord.Embed(
                     title="Too many violations! Max ratelimit hit",
                     description=f"You have been blacklisted from using the AI.",
-                    color=discord.Color.red()
+                    color=discord.Color.red(),
                 )
-                embed.set_footer(text=" If you believe this is a mistake, please contact the support server.")
+                embed.set_footer(
+                    text=" If you believe this is a mistake, please contact the support server."
+                )
 
                 newdata = {
-                    "$set": { "ai_ignore": True, "ai_ignore_reason": "Too many violations, max ratelimit hit."}
+                    "$set": {
+                        "ai_ignore": True,
+                        "ai_ignore_reason": "Too many violations, max ratelimit hit.",
+                    }
                 }
 
-                users_global.update_one(
-                    { "id": message.author.id }, newdata
-                )
+                users_global.update_one({"id": message.author.id}, newdata)
 
                 await message.reply(embed=embed)
 
             return
 
         if profanity.contains_profanity(message.content):
-            newdata ={
-                "$inc": { "inspect.nsfw_requests": 1}
-            }
+            newdata = {"$inc": {"inspect.nsfw_requests": 1}}
 
-            users_global.update_one(
-                { "id": message.author.id }, newdata
-            )
+            users_global.update_one({"id": message.author.id}, newdata)
 
         for word in WORD_BLACKLIST:
             if word.lower() in message.content.lower():
-                newdata = {
-                    "$inc": { "inspect.times_flagged": 1}
-                }
+                newdata = {"$inc": {"inspect.times_flagged": 1}}
 
-                users_global.update_one(
-                    { "id": message.author.id }, newdata
+                users_global.update_one({"id": message.author.id}, newdata)
+
+                return await message.reply(
+                    "Your message contains a blacklisted word, please refrain from using it."
                 )
 
-                return await message.reply("Your message contains a blacklisted word, please refrain from using it.")
-
         if not "ai_requests" in user_data["inspect"]:
-            newdata = {
-                "$set": { "inspect.ai_requests": 0}
-            }
-            users_global.update_one(
-                { "id": message.author.id }, newdata
-            )
+            newdata = {"$set": {"inspect.ai_requests": 0}}
+            users_global.update_one({"id": message.author.id}, newdata)
 
         if user_data["inspect"]["ai_requests"] == 0:
             embed = discord.Embed(
@@ -433,13 +446,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             )
             await message.reply(embed=embed)
 
-        newdata ={
-            "$inc": { "inspect.ai_requests": 1}
-        }
+        newdata = {"$inc": {"inspect.ai_requests": 1}}
 
-        users_global.update_one(
-            { "id": message.author.id }, newdata
-        )
+        users_global.update_one({"id": message.author.id}, newdata)
 
         c = db["guilds"]
         data = c.find_one({"id": message.guild.id})
@@ -450,8 +459,12 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if data["groq_api_key"] == "NONE":
             if not data["ai_access"]:
-                await message.channel.send(f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(message)}groq-api-key <api_key>**")
-                logger.info(f"{message.author} tried to ask AI in {message.guild.name} ({message.guild.id}): AI Disabled!")
+                await message.channel.send(
+                    f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(message)}groq-api-key <api_key>**"
+                )
+                logger.info(
+                    f"{message.author} tried to ask AI in {message.guild.name} ({message.guild.id}): AI Disabled!"
+                )
                 return
             client = Groq(api_key=get_api_key())
         else:
@@ -460,7 +473,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             client = Groq(api_key=key)
 
         c = db["users"]
-        userInfo = await CachedDB.find_one(c, {"id": message.author.id, "guild_id": message.guild.id})
+        userInfo = await CachedDB.find_one(
+            c, {"id": message.author.id, "guild_id": message.guild.id}
+        )
 
         if not userInfo:
             userInfo = {}
@@ -473,7 +488,7 @@ class Ai(commands.Cog, name="🤖 AI"):
         userInfo["user"] = message.author
         userInfo["channel"] = message.channel
 
-        systemPrompt="You are a discord user, you are allowed to have opinions, also controversial ones, send a reply in max 500 characters. \n\nSystem info: {systemInfo} \n\nThe user's info:  {userInfo}"
+        systemPrompt = "You are a discord user, you are allowed to have opinions, also controversial ones, send a reply in max 500 characters. \n\nSystem info: {systemInfo} \n\nThe user's info:  {userInfo}"
 
         if "system_prompt" in data:
             if data["system_prompt"] != "NONE":
@@ -482,7 +497,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             if profanity.contains_profanity(systemPrompt):
                 if hasattr(message.channel, "is_nsfw"):
                     if not message.channel.is_nsfw():
-                        await message.reply("The system prompt contains profanity and this channel is not marked as NSFW. **Using default system prompt**")
+                        await message.reply(
+                            "The system prompt contains profanity and this channel is not marked as NSFW. **Using default system prompt**"
+                        )
                         systemPrompt = "NONE"
 
         image_url = None
@@ -491,7 +508,7 @@ class Ai(commands.Cog, name="🤖 AI"):
             image_url = message.attachments[0].url
         else:
             if message.content:
-                urls = re.findall(r'(https?://[^\s]+)', message.content)
+                urls = re.findall(r"(https?://[^\s]+)", message.content)
                 if urls:
                     image_url = urls[0]
 
@@ -505,19 +522,29 @@ class Ai(commands.Cog, name="🤖 AI"):
                         message.author.name + ": " + message.content,
                         image_url,
                         0,
-                        message.channel.id, str(userInfo),
+                        message.channel.id,
+                        str(userInfo),
                         groq_client=client,
-                        systemPrompt=systemPrompt)
-                    )
+                        systemPrompt=systemPrompt,
+                    ),
+                )
 
                 if len(data) > 2000:
-                    file = discord.File(io.BytesIO(data.encode()), filename="ai_response.txt")
+                    file = discord.File(
+                        io.BytesIO(data.encode()), filename="ai_response.txt"
+                    )
 
-                    await message.reply("-# Response was too long for a normal message", file=file)
+                    await message.reply(
+                        "-# Response was too long for a normal message", file=file
+                    )
                 else:
                     await message.reply(data)
 
-                ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
+                ai_requests = (
+                    self.statsDB.get("ai_requests")
+                    if self.statsDB.get("ai_requests")
+                    else 0
+                ) + 1
                 self.statsDB.set("ai_requests", ai_requests)
                 self.statsDB.save()
 
@@ -525,7 +552,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             logger.error(f"Error in AI: {e}")
             await message.reply("An error in the AI has occured")
 
-        logger.info(f"AI replied to {message.author} in {message.guild.name} ({message.guild.id})")
+        logger.info(
+            f"AI replied to {message.author} in {message.guild.name} ({message.guild.id})"
+        )
 
     @tasks.loop(hours=1)
     async def purge_conversations(self):
@@ -533,9 +562,7 @@ class Ai(commands.Cog, name="🤖 AI"):
         result = convos.delete_many({"expiresAt": {"$lt": time.time()}})
 
     @commands.hybrid_command(
-        name="ai",
-        description="Ask an AI for something",
-        usage="ai <prompt>"
+        name="ai", description="Ask an AI for something", usage="ai <prompt>"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -544,7 +571,9 @@ class Ai(commands.Cog, name="🤖 AI"):
     @commands.cooldown(10, 60, commands.BucketType.default)
     async def ai(self, context: Context, *, prompt: str) -> None:
         if self.ai_temp_disabled:
-            await context.send("AI is temporarily disabled due to techincal difficulties")
+            await context.send(
+                "AI is temporarily disabled due to techincal difficulties"
+            )
             return
 
         await context.defer()
@@ -558,17 +587,17 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if user_data:
             if user_data["ai_ignore"]:
-                await context.reply("**You are being ignored by the AI, reason: " + user_data["ai_ignore_reason"] + "**")
+                await context.reply(
+                    "**You are being ignored by the AI, reason: "
+                    + user_data["ai_ignore_reason"]
+                    + "**"
+                )
                 return
 
         if profanity.contains_profanity(context.message.content):
-            newdata ={
-                "$inc": { "inspect.nsfw_requests": 1}
-            }
+            newdata = {"$inc": {"inspect.nsfw_requests": 1}}
 
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            users_global.update_one({"id": context.author.id}, newdata)
 
         if user_data["inspect"]["ai_requests"] == 0:
             embed = discord.Embed(
@@ -577,27 +606,23 @@ class Ai(commands.Cog, name="🤖 AI"):
             await context.send(embed=embed)
 
         if not "ai_requests" in user_data["inspect"]:
-            newdata = {
-                "$set": { "inspect.ai_requests": 0}
-            }
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            newdata = {"$set": {"inspect.ai_requests": 0}}
+            users_global.update_one({"id": context.author.id}, newdata)
 
-        newdata ={
-            "$inc": { "inspect.ai_requests": 1}
-        }
+        newdata = {"$inc": {"inspect.ai_requests": 1}}
 
-        users_global.update_one(
-            { "id": context.author.id }, newdata
-        )
+        users_global.update_one({"id": context.author.id}, newdata)
 
         client = Groq(api_key=get_api_key())
 
-        userInfo = { "user": context.author }
+        userInfo = {"user": context.author}
 
         c = db["users"]
-        userData = c.find_one({"id": context.author.id, "guild_id": context.guild.id}) if context.guild else {}
+        userData = (
+            c.find_one({"id": context.author.id, "guild_id": context.guild.id})
+            if context.guild
+            else {}
+        )
 
         if userData:
             userData["whitelisted"] = "[REDACTED]"
@@ -618,18 +643,26 @@ class Ai(commands.Cog, name="🤖 AI"):
                     context.author.id,
                     0,
                     str(userInfo),
-                    groq_client=client
-                )
+                    groq_client=client,
+                ),
             )
 
             if len(data) > 2000:
-                file = discord.File(io.BytesIO(data.encode()), filename="ai_response.txt")
+                file = discord.File(
+                    io.BytesIO(data.encode()), filename="ai_response.txt"
+                )
 
-                await context.reply("-# Response was too long for a normal message", file=file)
+                await context.reply(
+                    "-# Response was too long for a normal message", file=file
+                )
             else:
                 await context.reply(data)
 
-            ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
+            ai_requests = (
+                self.statsDB.get("ai_requests")
+                if self.statsDB.get("ai_requests")
+                else 0
+            ) + 1
             self.statsDB.set("ai_requests", ai_requests)
             self.statsDB.save()
         except Exception as e:
@@ -639,7 +672,7 @@ class Ai(commands.Cog, name="🤖 AI"):
     @commands.hybrid_command(
         name="set-ai-channel",
         description="Set current channel as an AI channel",
-        usage="set-ai-channel"
+        usage="set-ai-channel",
     )
     @commands.has_permissions(manage_channels=True)
     @commands.check(Checks.is_not_blacklisted)
@@ -654,8 +687,12 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if data["groq_api_key"] == "NONE":
             if not data["ai_access"]:
-                await context.send(f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(context)}groq-api-key <api_key>**")
-                logger.info(f"{context.author} tried to set AI channel in {context.guild.name} ({context.guild.id}): AI Disabled!")
+                await context.send(
+                    f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(context)}groq-api-key <api_key>**"
+                )
+                logger.info(
+                    f"{context.author} tried to set AI channel in {context.guild.name} ({context.guild.id}): AI Disabled!"
+                )
                 return
 
             client = Groq(api_key=get_api_key())
@@ -667,32 +704,30 @@ class Ai(commands.Cog, name="🤖 AI"):
         await context.send("Setting channel...")
 
         loop = asyncio.get_running_loop()
-        data = await loop.run_in_executor(None, functools.partial(prompt_ai, "Hello", groq_client=client))
+        data = await loop.run_in_executor(
+            None, functools.partial(prompt_ai, "Hello", groq_client=client)
+        )
 
         try:
-             await context.channel.edit(slowmode_delay=5)
+            await context.channel.edit(slowmode_delay=5)
         except:
-             pass
+            pass
 
         await context.send(data)
 
         ai_channels.append(context.channel.id)
 
         c = db["ai_channels"]
-        data = c.find_one({ "listOfChannels": True })
+        data = c.find_one({"listOfChannels": True})
 
-        newdata = {
-                "$set": { "ai_channels": ai_channels }
-        }
+        newdata = {"$set": {"ai_channels": ai_channels}}
 
-        c.update_one(
-            { "listOfChannels": True }, newdata
-        )
+        c.update_one({"listOfChannels": True}, newdata)
 
     @commands.hybrid_command(
         name="unset-ai-channel",
         description="Unset current channel as an AI channel",
-        usage="unset-ai-channel"
+        usage="unset-ai-channel",
     )
     @commands.has_permissions(manage_channels=True)
     @commands.check(Checks.is_not_blacklisted)
@@ -704,13 +739,9 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         await context.channel.edit(slowmode_delay=0)
 
-        newdata = {
-                "$set": { "ai_channels": ai_channels }
-        }
+        newdata = {"$set": {"ai_channels": ai_channels}}
 
-        c.update_one(
-            { "listOfChannels": True }, newdata
-        )
+        c.update_one({"listOfChannels": True}, newdata)
 
         await context.send("Channel unset as AI channel")
 
@@ -721,7 +752,7 @@ class Ai(commands.Cog, name="🤖 AI"):
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
-    async def create_ai_thread(self, context: Context, *, prompt = "Hello") -> None:
+    async def create_ai_thread(self, context: Context, *, prompt="Hello") -> None:
         c = db["guilds"]
         data = c.find_one({"id": context.guild.id})
 
@@ -731,8 +762,12 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if data["groq_api_key"] == "NONE":
             if not data["ai_access"]:
-                await context.send(f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(context)}groq-api-key <api_key>**")
-                logger.info(f"{context.author} tried to create AI thread in {context.guild.name} ({context.guild.id}): AI Disabled!")
+                await context.send(
+                    f"**This server does not have access to built-in api keys, provide your own from https://console.groq.com/keys using {await self.bot.get_prefix(context)}groq-api-key <api_key>**"
+                )
+                logger.info(
+                    f"{context.author} tried to create AI thread in {context.guild.name} ({context.guild.id}): AI Disabled!"
+                )
                 return
 
             client = Groq(api_key=get_api_key())
@@ -745,16 +780,20 @@ class Ai(commands.Cog, name="🤖 AI"):
         msg = await context.send("Creating, please wait")
 
         loop = asyncio.get_running_loop()
-        data = await loop.run_in_executor(None, functools.partial(prompt_ai, prompt, groq_client=client))
+        data = await loop.run_in_executor(
+            None, functools.partial(prompt_ai, prompt, groq_client=client)
+        )
 
-        ai_requests = (self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0) + 1
+        ai_requests = (
+            self.statsDB.get("ai_requests") if self.statsDB.get("ai_requests") else 0
+        ) + 1
         self.statsDB.set("ai_requests", ai_requests)
         self.statsDB.save()
 
         newChannel = await context.channel.create_thread(
             name=f"AI Convo - {context.author}",
             type=discord.ChannelType.public_thread,
-            slowmode_delay=5
+            slowmode_delay=5,
         )
 
         await newChannel.send(data)
@@ -763,15 +802,11 @@ class Ai(commands.Cog, name="🤖 AI"):
         ai_channels.append(newChannel.id)
 
         c = db["ai_channels"]
-        data = c.find_one({ "listOfChannels": True })
+        data = c.find_one({"listOfChannels": True})
 
-        newdata = {
-                "$set": { "ai_channels": ai_channels }
-        }
+        newdata = {"$set": {"ai_channels": ai_channels}}
 
-        c.update_one(
-            { "listOfChannels": True }, newdata
-        )
+        c.update_one({"listOfChannels": True}, newdata)
 
         await context.send("Thread created: " + newChannel.mention)
 
@@ -779,7 +814,7 @@ class Ai(commands.Cog, name="🤖 AI"):
         name="ai-image",
         description="Generate an ai image",
         usage="ai-image <prompt>",
-        aliases=["image"]
+        aliases=["image"],
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -795,29 +830,28 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         if user_data:
             if user_data["ai_ignore"]:
-                await context.reply("**You are being ignored by the AI, reason: " + user_data["ai_ignore_reason"] + "**")
+                await context.reply(
+                    "**You are being ignored by the AI, reason: "
+                    + user_data["ai_ignore_reason"]
+                    + "**"
+                )
                 return
 
         if profanity.contains_profanity(prompt):
-            newdata ={
-                "$inc": { "inspect.nsfw_requests": 1}
-            }
+            newdata = {"$inc": {"inspect.nsfw_requests": 1}}
 
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            users_global.update_one({"id": context.author.id}, newdata)
 
             if hasattr(context.channel, "is_nsfw"):
                 if not context.channel.is_nsfw():
-                    return await context.send(f"NSFW requests are not allowed in non nsfw channels!", ephemeral=True)
+                    return await context.send(
+                        f"NSFW requests are not allowed in non nsfw channels!",
+                        ephemeral=True,
+                    )
 
         if not "ai_requests" in user_data["inspect"]:
-            newdata = {
-                "$set": { "inspect.ai_requests": 0}
-            }
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            newdata = {"$set": {"inspect.ai_requests": 0}}
+            users_global.update_one({"id": context.author.id}, newdata)
 
         if user_data["inspect"]["ai_requests"] == 0:
             embed = discord.Embed(
@@ -825,13 +859,9 @@ class Ai(commands.Cog, name="🤖 AI"):
             )
             await context.reply(embed=embed)
 
-        newdata ={
-            "$inc": { "inspect.ai_requests": 1}
-        }
+        newdata = {"$inc": {"inspect.ai_requests": 1}}
 
-        users_global.update_one(
-            { "id": context.author.id }, newdata
-        )
+        users_global.update_one({"id": context.author.id}, newdata)
 
         eta = int(time.time() + 20)
 
@@ -841,7 +871,9 @@ class Ai(commands.Cog, name="🤖 AI"):
 
         loop = asyncio.get_running_loop()
         try:
-            data = await loop.run_in_executor(None, functools.partial(self.generate_image, context, prompt))
+            data = await loop.run_in_executor(
+                None, functools.partial(self.generate_image, context, prompt)
+            )
         except Exception as e:
             await msg.edit(content="An error occurred while generating the image")
             raise e
@@ -849,20 +881,24 @@ class Ai(commands.Cog, name="🤖 AI"):
         logger.info(data)
 
         for image in data:
-            attachments.append(discord.File(BytesIO(base64.b64decode(image)), "ai_image.png"))
+            attachments.append(
+                discord.File(BytesIO(base64.b64decode(image)), "ai_image.png")
+            )
 
         await msg.edit(content="Here you go!", attachments=attachments)
 
     @commands.hybrid_command(
         name="imagine",
         description="Generate an ai image, where you can change the model",
-        usage="imagine <model (run command with no arguments for list)> <prompt>"
+        usage="imagine <model (run command with no arguments for list)> <prompt>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def imagine(self, context: commands.Context, model: str = "none", *, prompt: str = "potato") -> None:
+    async def imagine(
+        self, context: commands.Context, model: str = "none", *, prompt: str = "potato"
+    ) -> None:
         options = {
             "openjourney": "prompthero/openjourney-v4",
             "realistic-vision": "SG161222/Realistic_Vision_V4.0_noVAE",
@@ -883,16 +919,25 @@ class Ai(commands.Cog, name="🤖 AI"):
             users_global.insert_one(user_data)
 
         if model not in options:
-            return await context.send("Invalid model. Available models: " + ", ".join(options.keys()))
+            return await context.send(
+                "Invalid model. Available models: " + ", ".join(options.keys())
+            )
 
         if model in nsfw_options:
             if hasattr(context.channel, "is_nsfw"):
                 if not context.channel.is_nsfw():
-                    return await context.send(f"NSFW models are not allowed in non NSFW channels!", ephemeral=True)
+                    return await context.send(
+                        f"NSFW models are not allowed in non NSFW channels!",
+                        ephemeral=True,
+                    )
 
         if user_data:
             if user_data["ai_ignore"]:
-                await context.reply("**You are being ignored by the AI, reason: " + user_data["ai_ignore_reason"] + "**")
+                await context.reply(
+                    "**You are being ignored by the AI, reason: "
+                    + user_data["ai_ignore_reason"]
+                    + "**"
+                )
                 return
 
         users_global = db["users_global"]
@@ -904,43 +949,32 @@ class Ai(commands.Cog, name="🤖 AI"):
             users_global.insert_one(user_data)
 
         if profanity.contains_profanity(prompt):
-            newdata ={
-                "$inc": { "inspect.nsfw_requests": 1}
-            }
+            newdata = {"$inc": {"inspect.nsfw_requests": 1}}
 
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            users_global.update_one({"id": context.author.id}, newdata)
 
             if hasattr(context.channel, "is_nsfw"):
                 if not context.channel.is_nsfw():
-                    return await context.send(f"NSFW requests are not allowed in non NSFW channels!", ephemeral=True)
+                    return await context.send(
+                        f"NSFW requests are not allowed in non NSFW channels!",
+                        ephemeral=True,
+                    )
 
         if not "ai_requests" in user_data["inspect"]:
-            newdata = {
-                "$set": { "inspect.ai_requests": 0}
-            }
-            users_global.update_one(
-                { "id": context.author.id }, newdata
-            )
+            newdata = {"$set": {"inspect.ai_requests": 0}}
+            users_global.update_one({"id": context.author.id}, newdata)
 
         if user_data["inspect"]["ai_requests"] == 0:
             embed = discord.Embed(
                 description="By interacting with the ai in any way you agree to the following:\n- We will log: amount of ai requests, times you get flagged, nsfw request count\n- We will also store all messages you send to the AI in order to give the AI memory, these messages will be deleted after 7 days of inactivity and will not be seen by anyone other than the ai itself."
             )
             await context.reply(embed=embed)
-        newdata ={
-            "$inc": { "inspect.ai_requests": 1}
-        }
+        newdata = {"$inc": {"inspect.ai_requests": 1}}
 
-        users_global.update_one(
-            { "id": context.author.id }, newdata
-        )
+        users_global.update_one({"id": context.author.id}, newdata)
 
         ETA = int(time.time() + 15)
-        msg = await context.send(
-            f"This might take a bit of time... ETA: <t:{ETA}:R>"
-        )
+        msg = await context.send(f"This might take a bit of time... ETA: <t:{ETA}:R>")
 
         async with aiohttp.ClientSession() as session:
             api_key = os.getenv("HF_API_KEY")
@@ -952,23 +986,45 @@ class Ai(commands.Cog, name="🤖 AI"):
             )
 
             if response.status != 200:
-                return await msg.edit(content="An error occurred while generating the image: " + http.client.responses[response.status])
+                return await msg.edit(
+                    content="An error occurred while generating the image: "
+                    + http.client.responses[response.status]
+                )
 
             images = [discord.File(BytesIO(await response.read()), "ai_image.png")]
 
             await msg.edit(attachments=images, content="Here you go!")
 
-    def generate_image(self, context: commands.Context, prompt: str, width=1024, height=1024, style="DEFAULT", negative_prompt="", number_of_images=1) -> None:
-        api_key = os.environ.get('FUSION_API_KEY')
-        secret_key = os.environ.get('FUSION_SECRET_KEY')
+    def generate_image(
+        self,
+        context: commands.Context,
+        prompt: str,
+        width=1024,
+        height=1024,
+        style="DEFAULT",
+        negative_prompt="",
+        number_of_images=1,
+    ) -> None:
+        api_key = os.environ.get("FUSION_API_KEY")
+        secret_key = os.environ.get("FUSION_SECRET_KEY")
 
         if not api_key or not secret_key:
-            context.send("API keys are missing. Please set the FUSION_API_KEY and FUSION_SECRET_KEY environment variables.")
+            context.send(
+                "API keys are missing. Please set the FUSION_API_KEY and FUSION_SECRET_KEY environment variables."
+            )
             return
 
-        api = Text2ImageAPI('https://api-key.fusionbrain.ai/')
+        api = Text2ImageAPI("https://api-key.fusionbrain.ai/")
         model_id = api.get_model()
-        uuid = api.generate(prompt, model_id, images=number_of_images, width=width, height=height, style=style, negative_prompt=negative_prompt)
+        uuid = api.generate(
+            prompt,
+            model_id,
+            images=number_of_images,
+            width=width,
+            height=height,
+            style=style,
+            negative_prompt=negative_prompt,
+        )
         images_data = api.check_generation(uuid)
 
         return images_data
@@ -976,7 +1032,7 @@ class Ai(commands.Cog, name="🤖 AI"):
     @commands.hybrid_command(
         name="system-prompt",
         description="Set the system prompt for the AI",
-        usage="system-prompt <prompt>"
+        usage="system-prompt <prompt>",
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -988,29 +1044,27 @@ class Ai(commands.Cog, name="🤖 AI"):
         if prompt == "":
             if data:
                 if "system_prompt" in data:
-                    return await context.send("Current system prompt: " + data["system_prompt"])
+                    return await context.send(
+                        "Current system prompt: " + data["system_prompt"]
+                    )
                 else:
                     return await context.send("No system prompt set.")
 
         if profanity.contains_profanity(prompt):
             if not context.channel.is_nsfw():
                 prompt = "NONE"
-                await context.send("The system prompt contains profanity and this channel is not marked as NSFW. Please use an NSFW channel for NSFW prompts.")
+                await context.send(
+                    "The system prompt contains profanity and this channel is not marked as NSFW. Please use an NSFW channel for NSFW prompts."
+                )
 
-        newdata = {
-                "$set": { "system_prompt": prompt }
-        }
+        newdata = {"$set": {"system_prompt": prompt}}
 
-        c.update_one(
-            { "id": context.guild.id }, newdata
-        )
+        c.update_one({"id": context.guild.id}, newdata)
 
         await context.send("System prompt set to: " + prompt)
 
     @commands.hybrid_command(
-        name="reset-ai",
-        description="Reset AI data",
-        usage="reset-ai"
+        name="reset-ai", description="Reset AI data", usage="reset-ai"
     )
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
@@ -1032,6 +1086,7 @@ class Ai(commands.Cog, name="🤖 AI"):
             await context.send("AI is now disabled globally")
         else:
             await context.send("AI is now enabled globally")
+
 
 async def setup(bot) -> None:
     await bot.add_cog(Ai(bot))
