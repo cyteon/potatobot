@@ -35,7 +35,7 @@ def apply_context_errors(embed, context, ignore_message=False):
         )
 
     if context.interaction:
-        options = context.interaction.data["options"]
+        options = context.interaction.data.get("options", [])
         options = json.dumps(options, indent=2)
 
         embed.add_field(

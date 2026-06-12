@@ -233,7 +233,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
     @commands.check(Checks.is_not_blacklisted)
     @commands.check(Checks.command_not_disabled)
     async def pay(self, context: Context, user: discord.Member, amount: int) -> None:
-        if amount < 0:
+        if amount <= 0:
             await context.send("You can't pay a negative amount")
             return
 

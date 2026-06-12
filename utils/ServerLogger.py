@@ -34,5 +34,8 @@ async def send_log(
     log_channel = g["log_channel"]
     log_channel = guild.get_channel(log_channel)
 
+    if log_channel is None:
+        return
+
     embed = discord.Embed(title=title, description=description, color=color)
     await log_channel.send(embed=embed)

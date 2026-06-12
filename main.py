@@ -75,7 +75,7 @@ async def get_commands(cog: Optional[str] = "all"):
                 "extras": cmd.extras,
             }
             for cmd in bot.walk_commands()
-            if not "owner" in cmd.cog_name
+            if cmd.cog_name is not None and "owner" not in cmd.cog_name
         ]
         return all_commands
     else:
@@ -163,7 +163,8 @@ async def get_user(id: int):
     guilds = []
 
     for guild in mutals:
-        if guild.get_member(user.id).guild_permissions.administrator:
+        member = guild.get_member(user.id)
+        if member is not None and member.guild_permissions.administrator:
             guilds.append(
                 {
                     "name": guild.name,

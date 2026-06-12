@@ -674,7 +674,7 @@ class Security(commands.Cog, name="🛡️ Security"):
                     return
 
                 if user == channel.guild.owner:
-                    pass
+                    return
 
                 users = db["users"]
                 user_data = users.find_one(

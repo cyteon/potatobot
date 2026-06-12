@@ -179,6 +179,9 @@ class DiscordBot(commands.AutoShardedBot):
         self.status_task.start()
 
     async def on_guild_remove(self, guild: discord.Guild):
+        if not guild.name:
+            return
+
         async with aiohttp.ClientSession() as session:
             to_send = Webhook.from_url(config["join_leave_webhook"], session=session)
 
@@ -326,9 +329,10 @@ class DiscordBot(commands.AutoShardedBot):
                     await context.message.add_reaction("❓")
                 except discord.errors.Forbidden:
                     cant_react_in.append(context.channel)
-                    logger.warning(
-                        f"Couldn't react to a message in {context.channel.name} (ID: {context.channel.id}) in {context.guild.name} (ID: {context.guild.id})"
-                    )
+                    if context.guild:
+                        logger.warning(
+                            f"Couldn't react to a message in {context.channel.name} (ID: {context.channel.id}) in {context.guild.name} (ID: {context.guild.id})"
+                        )
         elif isinstance(error, Errors.CommandDisabled):
             embed = discord.Embed(
                 title="Error!",
