@@ -47,6 +47,10 @@ class TicketSetupView(discord.ui.View):
 
     @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         embed = discord.Embed(
             title="Change leveling system settings",
             description="Would you like to change the leveling system settings for your server?",
@@ -162,6 +166,10 @@ class LevelingSetupView(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.secondary)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         db.guilds.update_one({"id": self.server_id}, {"$set": {"should_announce_levelup": False}})
 
         embed = discord.Embed(
@@ -197,6 +205,10 @@ class LevelingShouldAnnounceLevelUp(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.secondary)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         db.guilds.update_one({"id": self.server_id}, {"$set": {"should_announce_levelup": False}})
 
         embed = discord.Embed(
@@ -257,6 +269,10 @@ class LevelingChannelSelectView(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.secondary)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         embed = discord.Embed(
             title="Setup starboard?",
             description="Would you like to setup the starboard?",
@@ -343,6 +359,10 @@ class StarboardSetupView(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.secondary)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         db.guilds.update_one({"id": self.server_id}, {"$set": {"starboard.enabled": False}})
 
         embed = discord.Embed(
@@ -403,6 +423,10 @@ class LoggingSetupView(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.secondary)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if interaction.user != interaction.guild.owner:
+            await interaction.response.send_message("You can't interact with this :D", ephemeral=True)
+            return
+
         embed = discord.Embed(
             title="Setup complete!",
             description="We recommend you move the role 'Potato Bot' high up on the role list to make sure all features works properly",

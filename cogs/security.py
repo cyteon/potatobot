@@ -179,7 +179,7 @@ class Security(commands.Cog, name="🛡️ Security"):
                 )
 
                 try:
-                    message.channel.send(embed=embed)
+                    await message.channel.send(embed=embed)
                 except:
                     pass
 
@@ -320,13 +320,13 @@ class Security(commands.Cog, name="🛡️ Security"):
                     user = None
 
                     async for entry in discord_guild.audit_logs(action=discord.AuditLogAction.role_update, limit=2):
-                        if entry.target == before or after:
-                            if user == discord_guild.owner:
+                        if entry.target in (before, after):
+                            if entry.user == discord_guild.owner:
                                 continue
                             user = entry.user
 
                     if user is None:
-                        pass
+                        return
 
                     if user.id == self.bot.user.id:
                         return
@@ -808,7 +808,7 @@ class Security(commands.Cog, name="🛡️ Security"):
         users = db["users"]
         user_data = users.find_one({"id": user.id, "guild_id": context.guild.id})
 
-        if user is None:
+        if user_data is None:
             user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
@@ -838,7 +838,7 @@ class Security(commands.Cog, name="🛡️ Security"):
         users = db["users"]
         user_data = users.find_one({"id": user.id, "guild_id": context.guild.id})
 
-        if user is None:
+        if user_data is None:
             user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
@@ -866,8 +866,8 @@ class Security(commands.Cog, name="🛡️ Security"):
         list = "```"
 
         for user in whitelisted:
-            user = context.guild.get_member(user["id"])
-            list += f"{user.name}\n"
+            member = context.guild.get_member(user["id"])
+            list += f"{member.name}\n" if member else f"{user['id']}\n"
 
         list += "```"
 
@@ -912,7 +912,7 @@ class Security(commands.Cog, name="🛡️ Security"):
         users = db["users"]
         user_data = users.find_one({"id": user.id, "guild_id": context.guild.id})
 
-        if user is None:
+        if user_data is None:
             user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
@@ -942,7 +942,7 @@ class Security(commands.Cog, name="🛡️ Security"):
         users = db["users"]
         user_data = users.find_one({"id": user.id, "guild_id": context.guild.id})
 
-        if user is None:
+        if user_data is None:
             user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
@@ -970,8 +970,8 @@ class Security(commands.Cog, name="🛡️ Security"):
         list = "```"
 
         for user in whitelisted:
-            user = context.guild.get_member(user["id"])
-            list += f"{user.name}\n"
+            member = context.guild.get_member(user["id"])
+            list += f"{member.name}\n" if member else f"{user['id']}\n"
 
         list += "```"
 
@@ -1483,7 +1483,7 @@ class ConfirmView(discord.ui.View):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.author != interaction.user:
-            return interaction.response.send_message("no", ephemeral=True)
+            return await interaction.response.send_message("no", ephemeral=True)
 
         await interaction.response.defer()
 
@@ -1520,9 +1520,9 @@ class ConfirmView(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.primary)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.author != interaction.user:
-            return interaction.response.send_message("no", ephemeral=True)
+            return await interaction.response.send_message("no", ephemeral=True)
 
-        await interaction.response.edit_message("Action cancelled", view=None)
+        await interaction.response.edit_message(content="Action cancelled", view=None, embed=None)
 
 async def setup(bot) -> None:
     await bot.add_cog(Security(bot))

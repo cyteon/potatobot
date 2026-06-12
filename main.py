@@ -113,6 +113,9 @@ async def get_guild(id: int):
         guild_data = CONSTANTS.guild_data_template(id)
         guilds.insert_one(guild_data)
 
+    for sensitive_key in ("groq_api_key", "oldperms", "fakeperms", "security"):
+        guild_data.pop(sensitive_key, None)
+
     guild = {
         "name": guild.name,
         "id": guild.id,

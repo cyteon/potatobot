@@ -344,7 +344,7 @@ class Owner(commands.Cog, name="owner"):
         users_global = db["users_global"]
         user_data = users_global.find_one({"id": user.id})
 
-        if user is None:
+        if user_data is None:
             user_data = CONSTANTS.user_global_data_template(user.id)
             users_global.insert_one(user_data)
 
