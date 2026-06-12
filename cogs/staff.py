@@ -546,10 +546,11 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         if user == self.bot.user:
             return await context.send("what did i do :C")
 
-        member = await context.guild.fetch_member(user.id)
-
-        if member:
+        try:
+            await context.guild.fetch_member(user.id)
             return await context.send("User is already in the server! Use the `ban` command instead.")
+        except discord.NotFound:
+            pass
 
         try:
             await context.guild.ban(user, reason=reason, delete_message_days=0)
@@ -771,13 +772,11 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         if user == self.bot.user:
             return await context.send("what did i do :C")
         try:
-            # Try to parse the string as a datetime
-            dt = datetime.fromisoformat(time)
-            return dt
+            datetime.fromisoformat(time)
+            return await context.send("ISO datetime strings are not supported as a duration. Use a format like `1d`, `2h`, `30m`.")
         except ValueError:
             pass
 
-        # If the string is not a valid datetime, try to parse it as a duration
         pattern = r'^(\d+)([ydhmsw])$'
         match = re.match(pattern, time)
 
@@ -788,7 +787,6 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         duration = {
             'y': timedelta(days=365*value),
             'w': timedelta(days=7*value),
-            'month': timedelta(days=30*value),
             'd': timedelta(days=value),
             'h': timedelta(hours=value),
             'm': timedelta(minutes=value),
@@ -964,7 +962,7 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         user_data = await CachedDB.find_one(users, {"id": user.id})
 
         if not user_data:
-            user_data = CONSTANTS.user_data_template(context.guild.id, user.id)
+            user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
         newdata = {
@@ -1004,7 +1002,7 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         user_data = await CachedDB.find_one(users, {"id": user.id})
 
         if not user_data:
-            user_data = CONSTANTS.user_data_template(context.guild.id, user.id)
+            user_data = CONSTANTS.user_data_template(user.id, context.guild.id)
             users.insert_one(user_data)
 
         newdata = {

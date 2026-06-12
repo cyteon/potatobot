@@ -419,7 +419,7 @@ class Owner(commands.Cog, name="owner"):
 
         if user_data is None:
             user_data = CONSTANTS.user_global_data_template(user.id)
-            user_data.insert_one(user_data)
+            users_global.insert_one(user_data)
 
         newdata = {
             "$set": {

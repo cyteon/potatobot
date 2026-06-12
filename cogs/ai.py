@@ -26,6 +26,7 @@ FILTERS = [
 WORD_BLACKLIST = ["nigger", "nigga", "n i g g e r"]
 
 import discord
+import sys
 import requests
 import io
 import os
@@ -113,7 +114,7 @@ def prompt_ai(
         authorId = 0,
         channelId = 0,
         userInfo="",
-        groq_client=Groq(api_key=get_api_key()),
+        groq_client=None,
         systemPrompt="none"
     ):
     c = db["ai_convos"]

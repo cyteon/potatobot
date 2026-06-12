@@ -135,7 +135,7 @@ async def get_user(id: int):
     if user is None:
         return {"message": "User not found.", "status": 404}
 
-    users = db["global_users"]
+    users = db["users_global"]
     user_data = await CachedDB.find_one(users, {"id": user.id})
 
     if user_data is None:

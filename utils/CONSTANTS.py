@@ -78,7 +78,7 @@ def user_global_data_template(user_id):
             "nsfw_requests": 0,
             "ai_requests": 0,
         },
-        "strikes": {}
+        "strikes": []
     }
 
 LEVELS_AND_XP: Final = {  # credit's for this goes to the mee6 developers as we use the same xp values as them

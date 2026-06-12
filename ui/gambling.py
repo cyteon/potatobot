@@ -257,7 +257,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -285,7 +285,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -313,7 +313,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -342,7 +342,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -371,7 +371,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
@@ -400,7 +400,7 @@ class RollButton(View):
 
         await interaction.message.edit(content="Rolling the dice...", view=None)
         await asyncio.sleep(1)
-        number = random.randrange(1, 6)
+        number = random.randint(1, 6)
 
         c = db["users"]
         data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})

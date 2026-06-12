@@ -37,7 +37,7 @@ else:
 class General(commands.Cog, name="⬜ General"):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.context_menu_message = app_commands.ContextMenu(
+        self.context_menu_spoilers = app_commands.ContextMenu(
             name="Remove spoilers", callback=self.ctx_remove_spoilers
         )
         self.context_menu_message = app_commands.ContextMenu(
@@ -46,6 +46,7 @@ class General(commands.Cog, name="⬜ General"):
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=app_commands.AppInstallationType(guild=True, user=True)
         )
+        self.bot.tree.add_command(self.context_menu_spoilers)
         self.bot.tree.add_command(self.context_menu_message)
         self.get_prefix = bot.get_prefix
 
