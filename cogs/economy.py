@@ -167,7 +167,7 @@ class Economy(commands.Cog, name="🪙 Economy"):
 
             await context.send(f"You successfully robbed {user} and got {payout}$")
         elif result == 1:
-            payout = min(random.randint(1, max_payout//2), author_data["wallet"]//3, 10000)
+            payout = min(random.randint(1, max(1, max_payout//2)), author_data["wallet"]//3, 10000)
             author_data["wallet"] -= payout
             target_data["wallet"] += payout
 

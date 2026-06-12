@@ -103,7 +103,7 @@ class BlackjackView(View):
 
         if self.player_score > 21:
             self.game_over = True
-            user["wallet"] -= self.amount
+            user["wallet"] = max(0, user["wallet"] - self.amount)
 
             newdata = {"$set": {"wallet": user["wallet"]}}
             c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
@@ -151,7 +151,7 @@ class BlackjackView(View):
 
         if self.dealer_score > self.player_score:
             self.game_over = True
-            user["wallet"] -= self.amount
+            user["wallet"] = max(0, user["wallet"] - self.amount)
 
             newdata = {"$set": {"wallet": user["wallet"]}}
             c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
@@ -200,12 +200,10 @@ class HeadsOrTailsButton(View):
 
         if coin == "heads":
             await interaction.message.edit(content=f"The coin landed on {coin}! You won {self.amount * 2}$")
-
             data["wallet"] += self.amount * 2
         else:
             await interaction.message.edit(content=f"The coin landed on {coin}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
+            data["wallet"] = max(0, data["wallet"] - self.amount)
 
         newdata = {
             "$set": {"wallet": data["wallet"]}
@@ -229,18 +227,16 @@ class HeadsOrTailsButton(View):
 
         if coin == "tails":
             await interaction.message.edit(content=f"The coin landed on {coin}! You won {self.amount * 2}$")
-
             data["wallet"] += self.amount * 2
         else:
             await interaction.message.edit(content=f"The coin landed on {coin}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
+            data["wallet"] = max(0, data["wallet"] - self.amount)
 
         newdata = {
             "$set": {"wallet": data["wallet"]}
         }
         c.update_one(
-            {"id": interaction.user .id, "guild_id": interaction.guild.id}, newdata
+            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
         )
 
 # roll 1 - 6
@@ -250,178 +246,53 @@ class RollButton(View):
         self.amount = amount
         self.authorid = authorid
 
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_1",emoji="1️⃣")
+    async def _roll(self, interaction: discord.Interaction, chosen: int):
+        if interaction.user.id != self.authorid:
+            return
+
+        await interaction.response.defer()
+        await interaction.message.edit(content="Rolling the dice...", view=None)
+        await asyncio.sleep(1)
+        number = random.randint(1, 6)
+
+        c = db["users"]
+        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
+
+        if number == chosen:
+            data["wallet"] += self.amount * 5
+            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
+        else:
+            data["wallet"] = max(0, data["wallet"] - self.amount)
+            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
+
+        c.update_one(
+            {"id": interaction.user.id, "guild_id": interaction.guild.id},
+            {"$set": {"wallet": data["wallet"]}}
+        )
+
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_1", emoji="1️⃣")
     async def one(self, interaction: discord.Interaction, button: button):
-        if interaction.user.id != self.authorid:
-            return
+        await self._roll(interaction, 1)
 
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 1:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_2",emoji="2️⃣")
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_2", emoji="2️⃣")
     async def two(self, interaction: discord.Interaction, button: button):
-        if interaction.user.id != self.authorid:
-            return
+        await self._roll(interaction, 2)
 
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 2:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_3",emoji="3️⃣")
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_3", emoji="3️⃣")
     async def three(self, interaction: discord.Interaction, button: button):
-        if interaction.user.id != self.authorid:
-            return
+        await self._roll(interaction, 3)
 
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 3:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_4",emoji="4️⃣")
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_4", emoji="4️⃣")
     async def four(self, interaction: discord.Interaction, button: button):
-        if interaction.user.id != self.authorid:
-            return
+        await self._roll(interaction, 4)
 
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 4:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_5",emoji="5️⃣")
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_5", emoji="5️⃣")
     async def five(self, interaction: discord.Interaction, button: button):
-        if interaction.user.id != self.authorid:
-            return
+        await self._roll(interaction, 5)
 
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 5:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_6",emoji="6️⃣")
+    @button(label="", style=discord.ButtonStyle.primary, custom_id="roll_6", emoji="6️⃣")
     async def six(self, interaction: discord.Interaction, button: button):
-
-        if interaction.user.id != self.authorid:
-            return
-
-        await interaction.message.edit(content="Rolling the dice...", view=None)
-        await asyncio.sleep(1)
-        number = random.randint(1, 6)
-
-        c = db["users"]
-        data = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-
-        if number == 6:
-            await interaction.message.edit(content=f"The dice landed on {number}! You won {self.amount * 5}$")
-
-            data["wallet"] += self.amount * 5
-        else:
-            await interaction.message.edit(content=f"The dice landed on {number}! You lost {self.amount}$")
-
-            data["wallet"] -= self.amount
-
-        newdata = {
-            "$set": {"wallet": data["wallet"]}
-        }
-        c.update_one(
-            {"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata
-        )
-
-        # TODO: make sure my ass code actually w̶o̶r̶k̶s looks good
+        await self._roll(interaction, 6)
 
 class SlotsButton(View):
     def __init__(self, amount, multii, authorid):
@@ -447,10 +318,9 @@ class SlotsButton(View):
         self.result = result
         self.outcome_message = outcome_message
 
-        # Update user wallet in database
         c = db["users"]
         user = c.find_one({"id": interaction.user.id, "guild_id": interaction.guild.id})
-        user["wallet"] += amount_won
+        user["wallet"] = max(0, user["wallet"] + amount_won)
         newdata = {"$set": {"wallet": user["wallet"]}}
         c.update_one({"id": interaction.user.id, "guild_id": interaction.guild.id}, newdata)
 

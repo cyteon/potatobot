@@ -996,7 +996,12 @@ class Staff(commands.Cog, name="👮‍♂️ Staff"):
         guilds = db["guilds"]
         data = guilds.find_one({"id": context.guild.id})
 
-        await user.remove_roles(context.guild.get_role(data["jail_role"]))
+        if not data or not data.get("jail_role"):
+            return await context.send("No jail role configured for this server.")
+
+        jail_role = context.guild.get_role(data["jail_role"])
+        if jail_role:
+            await user.remove_roles(jail_role)
 
         users = db["users"]
         user_data = await CachedDB.find_one(users, {"id": user.id})

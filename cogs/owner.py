@@ -290,20 +290,17 @@ class Owner(commands.Cog, name="owner"):
     @commands.is_owner()
     async def enable_ai(self, context, server: int = 0):
         c = db["guilds"]
+        target_id = server if server != 0 else context.guild.id
 
-        data = c.find_one(
-            {
-                "id": server if server != 0 else context.guild.id
-            }
-        )
+        data = c.find_one({"id": target_id})
 
         if not data:
-            data = CONSTANTS.guild_data_template(context.guild.id)
+            data = CONSTANTS.guild_data_template(target_id)
             c.insert_one(data)
 
         newdata = { "$set": { "ai_access": True } }
 
-        c.update_one({"id": context.guild.id}, newdata)
+        c.update_one({"id": target_id}, newdata)
 
         await context.send("AI access have been enabled in this server")
 
@@ -315,20 +312,17 @@ class Owner(commands.Cog, name="owner"):
     @commands.is_owner()
     async def disable_ai(self, context, server_id: int = 0):
         c = db["guilds"]
+        target_id = server_id if server_id != 0 else context.guild.id
 
-        data = c.find_one(
-            {
-                "id": server_id if server_id != 0 else context.guild.id
-            }
-        )
+        data = c.find_one({"id": target_id})
 
         if not data:
-            data = CONSTANTS.guild_data_template(context.guild.id)
+            data = CONSTANTS.guild_data_template(target_id)
             c.insert_one(data)
 
         newdata = { "$set": { "ai_access": False } }
 
-        c.update_one({"id": context.guild.id}, newdata)
+        c.update_one({"id": target_id}, newdata)
 
         await context.send("AI access have been disabled in this server")
 

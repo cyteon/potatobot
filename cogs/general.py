@@ -406,8 +406,8 @@ class General(commands.Cog, name="⬜ General"):
         loaded_sub = subreddit
         await loaded_sub.load()
 
-        if hasattr(context.channel, "over18"):
-            if loaded_sub.over18 and not context.channel.is_nsfw() and not context.channel.id == context.author.id:
+        if loaded_sub.over18:
+            if hasattr(context.channel, "is_nsfw") and not context.channel.is_nsfw() and context.channel.id != context.author.id:
                 await context.send("This subreddit is NSFW, please use this command in a NSFW channel or dms.")
                 return
 
@@ -431,8 +431,8 @@ class General(commands.Cog, name="⬜ General"):
             loaded_post = random_post
             await loaded_post.load()
 
-            if not context.guild:
-                if loaded_post.over_18 and not context.channel.is_nsfw() and not context.channel.id == context.author.id:
+            if loaded_post.over_18:
+                if hasattr(context.channel, "is_nsfw") and not context.channel.is_nsfw() and context.channel.id != context.author.id:
                     continue
 
             if loaded_post.stickied:
