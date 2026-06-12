@@ -9,16 +9,15 @@ import platform
 import random
 import sys
 import time
+
 import aiohttp
-
-from pickledb import PickleDB
-import pymongo
-
 import discord
+import pymongo
 from discord import Webhook
 from discord.ext import commands, tasks
-
 from dotenv import load_dotenv
+from pickledb import PickleDB
+
 load_dotenv()
 
 from utils import ErrorLogger, Errors
@@ -41,6 +40,7 @@ prefixDB = PickleDB("pickle/prefix.db")
 statsDB = PickleDB("pickle/stats.db")
 
 cant_react_in = []
+
 
 class LoggingFormatter(logging.Formatter):
     black = "\x1b[30m"
@@ -69,6 +69,7 @@ class LoggingFormatter(logging.Formatter):
         formatter = logging.Formatter(format, "%Y-%m-%d %H:%M:%S", style="{")
         return formatter.format(record)
 
+
 logger = logging.getLogger("discord_bot")
 logger.setLevel(logging.INFO)
 
@@ -83,6 +84,7 @@ file_handler.setFormatter(file_handler_formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
+
 class DiscordBot(commands.AutoShardedBot):
     def __init__(self) -> None:
         super().__init__(
@@ -93,7 +95,7 @@ class DiscordBot(commands.AutoShardedBot):
         )
         self.logger = logger
         self.config = config
-        self.version = "2.1.8"
+        self.version = "2.2.0"
         self.start_time = time.time()
         self.prefixDB = prefixDB
         self.statsDB = statsDB
@@ -124,12 +126,15 @@ class DiscordBot(commands.AutoShardedBot):
     @tasks.loop(minutes=1.0)
     async def status_task(self) -> None:
         statuses = ["youtube", "netflix"]
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=random.choice(statuses)))
+        await self.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching, name=random.choice(statuses)
+            )
+        )
 
     @status_task.before_loop
     async def before_status_task(self) -> None:
         await self.wait_until_ready()
-
 
     async def setup_hook(self) -> None:
         self.logger.info(f"Logged in as {self.user.name}")
@@ -149,9 +154,15 @@ class DiscordBot(commands.AutoShardedBot):
 
         self.logger.info("-------------------")
 
-        self.logger.info(f"Command count (slash+chat): {len([x for x in self.walk_commands() if isinstance(x, commands.HybridCommand)])}")
-        self.logger.info(f"Command count (chat only): {len([x for x in self.walk_commands() if isinstance(x, commands.Command) and not isinstance(x, commands.HybridCommand)])}")
-        self.logger.info(f"Total command count: {len([x for x in self.walk_commands()])}")
+        self.logger.info(
+            f"Command count (slash+chat): {len([x for x in self.walk_commands() if isinstance(x, commands.HybridCommand)])}"
+        )
+        self.logger.info(
+            f"Command count (chat only): {len([x for x in self.walk_commands() if isinstance(x, commands.Command) and not isinstance(x, commands.HybridCommand)])}"
+        )
+        self.logger.info(
+            f"Total command count: {len([x for x in self.walk_commands()])}"
+        )
 
         self.logger.info(
             f"Command groups: {len([x for x in self.walk_commands() if isinstance(x, commands.HybridGroup) or isinstance(x, commands.Group)])}"
@@ -174,7 +185,7 @@ class DiscordBot(commands.AutoShardedBot):
             embed = discord.Embed(
                 title="Bot left a guild!",
                 description=f"**Guild Name:** {guild.name}\n**Guild ID:** {guild.id}\n**Owner:** {guild.owner.mention if guild.owner else None} ({guild.owner})\n **Member Count:** {guild.member_count}",
-                color=0xE02B2B
+                color=0xE02B2B,
             )
 
             await to_send.send(embed=embed, username="PotatoBot - Guild Logger")
@@ -188,7 +199,7 @@ class DiscordBot(commands.AutoShardedBot):
             embed = discord.Embed(
                 title="Bot joined a guild!",
                 description=f"**Guild Name:** {guild.name}\n**Guild ID:** {guild.id}\n**Owner:** {guild.owner.mention if guild.owner else None} ({guild.owner})\n **Member Count:** {guild.member_count}",
-                color=0x57F287
+                color=0x57F287,
             )
 
             await to_send.send(embed=embed, username="PotatoBot - Guild Logger")
@@ -213,23 +224,28 @@ class DiscordBot(commands.AutoShardedBot):
 
         ctx = await self.get_context(message)
         if ctx.command is not None:
-            self.dispatch('command', ctx)
+            self.dispatch("command", ctx)
             try:
                 if await self.can_run(ctx, call_once=True):
                     await ctx.command.invoke(ctx)
                 else:
-                    raise commands.errors.CheckFailure('The global check once functions failed.')
+                    raise commands.errors.CheckFailure(
+                        "The global check once functions failed."
+                    )
             except commands.errors.CommandError as exc:
                 await ctx.command.dispatch_error(ctx, exc)
             else:
-                self.dispatch('command_completion', ctx)
+                self.dispatch("command_completion", ctx)
         elif ctx.invoked_with:
-            exc = commands.errors.CommandNotFound(f'Command "{ctx.invoked_with}" is not found')
-            self.dispatch('command_error', ctx, exc)
+            exc = commands.errors.CommandNotFound(
+                f'Command "{ctx.invoked_with}" is not found'
+            )
+            self.dispatch("command_error", ctx, exc)
         else:
             if f"<@{str(self.user.id)}>" in message.content:
-                await message.reply(f"> My prefix is `{await self.get_prefix(message)}`")
-
+                await message.reply(
+                    f"> My prefix is `{await self.get_prefix(message)}`"
+                )
 
     async def on_command_completion(self, context: commands.Context) -> None:
         full_command_name = context.command.qualified_name
@@ -245,7 +261,9 @@ class DiscordBot(commands.AutoShardedBot):
                 f"Executed {executed_command} command by {context.author} (ID: {context.author.id}) in DMs"
             )
 
-        commands_ran = (statsDB.get("commands_ran") if statsDB.get("commands_ran") else 0) + 1
+        commands_ran = (
+            statsDB.get("commands_ran") if statsDB.get("commands_ran") else 0
+        ) + 1
         statsDB.set("commands_ran", commands_ran)
         statsDB.save()
 

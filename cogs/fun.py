@@ -537,7 +537,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     @commands.check(Checks.command_not_disabled)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def random_cat(self, context: Context) -> None:
+    async def random_coffee(self, context: Context) -> None:
         async with aiohttp.ClientSession() as session:
 
             img = await session.get(
@@ -736,7 +736,7 @@ class Fun(commands.Cog, name="🎉 Fun"):
     async def image(self, context: Context) -> None:
         prefix = await self.bot.get_prefix(context)
 
-        cmds = "\n".join([f"{prefix}image {cmd.name} - {cmd.description}" for cmd in self.image.walk_commands()])
+        cmds = "\n".join([f"{prefix}img {cmd.name} - {cmd.description}" for cmd in self.image.walk_commands()])
 
         embed = discord.Embed(
             title=f"Help: Image", description="List of available commands:", color=0xBEBEFE

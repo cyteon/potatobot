@@ -133,8 +133,10 @@ class Stats(commands.Cog, name="📈 Stats"):
 
         label_text = f'Messages - Last 30 days'
         total_text = f'Total Messages: {total_messages}'
-        label_width, _ = draw.textsize(label_text, font=font)
-        total_width, _ = draw.textsize(total_text, font=font)
+        label_bbox = draw.textbbox((0, 0), label_text, font=font)
+        label_width = label_bbox[2] - label_bbox[0]
+        total_bbox = draw.textbbox((0, 0), total_text, font=font)
+        total_width = total_bbox[2] - total_bbox[0]
         draw.text((20, 20), label_text, font=font, fill=(255, 255, 255))
         draw.text((1600 - total_width - 20, 20), total_text, font=font, fill=(255, 255, 255))
 
@@ -191,7 +193,8 @@ class Stats(commands.Cog, name="📈 Stats"):
 
         label_text = f'Member Count - Last 30 days'
 
-        label_width, _ = draw.textsize(label_text, font=font)
+        label_bbox = draw.textbbox((0, 0), label_text, font=font)
+        label_width = label_bbox[2] - label_bbox[0]
         draw.text((20, 20), label_text, font=font, fill=(255, 255, 255))
 
         img.save(f'graphs/graph-members-{context.channel.id}.png')

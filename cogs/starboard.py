@@ -126,6 +126,9 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
             return
 
         if payload.emoji.name == "⭐":
+            if not starboard_message:
+                return
+
             embed = discord.Embed(
                 description=message.content,
                 color=0xFFD700,
@@ -184,7 +187,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
         if not guild:
             guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(CONSTANTS.guild_data_template(context.guild.id))
+            col.insert_one(CONSTANTS.guild_data_template(context.guild.id))
 
         newdata = {
             "$set": {
@@ -209,7 +212,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
         if not guild:
             guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
+            col.insert_one(guild)
 
         newdata = {
             "$set": {
@@ -234,7 +237,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
         if not guild:
             guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
+            col.insert_one(guild)
 
         newdata = {
             "$set": {
@@ -260,7 +263,7 @@ class Starboard(commands.Cog, name="⭐ Starboard"):
 
         if not guild:
             guild = CONSTANTS.guild_data_template(context.guild.id)
-            await col.insert_one(guild)
+            col.insert_one(guild)
 
         newdata = {
             "$set": {

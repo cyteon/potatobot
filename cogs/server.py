@@ -48,7 +48,8 @@ class Server(commands.Cog, name="⚙️ Server"):
     @commands.has_permissions(manage_channels=True)
     async def prefix(self, context: commands.Context, prefix: str = "none"):
         if prefix == "none":
-            return await context.send("Current prefix is: `" + self.prefixDB.get(str(context.guild.id)) + "`")
+            current = self.prefixDB.get(str(context.guild.id)) or "!"
+            return await context.send("Current prefix is: `" + current + "`")
 
         if prefix == "/":
             return await context.send("Prefix cannot be `/`")
